@@ -109,6 +109,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 fn take_while<'a, P, A: 'a, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
 where
     P: Parser<'a, A, B>,
@@ -124,6 +125,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 fn join<'a, P1, P2, A: 'a, R1, R2>(parser1: P1, parser2: P2) -> impl Parser<'a, A, (R1, R2)>
 where
     P1: Parser<'a, A, R1>,
@@ -138,6 +140,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 fn left<'a, P1: 'a, P2: 'a, A: 'a, R1: 'a, R2: 'a>(
     parser1: P1,
     parser2: P2,
@@ -149,6 +152,7 @@ where
     join(parser1, parser2).map(|(left, _right)| left)
 }
 
+#[allow(dead_code)]
 fn right<'a, P1: 'a, P2: 'a, A: 'a, R1: 'a, R2: 'a>(
     parser1: P1,
     parser2: P2,
@@ -160,6 +164,7 @@ where
     join(parser1, parser2).map(|(_left, right)| right)
 }
 
+#[allow(dead_code)]
 fn unzip<A, B>(pair: Vec<(A, B)>) -> (Vec<A>, Vec<B>) {
     let mut left_vec: Vec<A> = vec![];
     let mut right_vec: Vec<B> = vec![];
