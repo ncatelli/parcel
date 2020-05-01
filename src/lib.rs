@@ -1,7 +1,13 @@
 #[cfg(test)]
 mod tests;
 
-pub type ParseResult<'a, Input, Output> = Result<(Input, Output), Input>;
+#[derive(Debug, PartialEq, Clone)]
+pub enum MatchStatus<U, T> {
+    Match((U, T)),
+    NoMatch(U),
+}
+
+pub type ParseResult<'a, Input, Output> = Result<MatchStatus<Input, Output>, String>;
 
 pub trait Parser<'a, Input, Output> {
     fn parse(&self, input: Input) -> ParseResult<'a, Input, Output>;
@@ -23,8 +29,11 @@ where
     F: Fn(B) -> C + 'a,
 {
     move |input| {
-        parser
-            .parse(input)
-            .map(|(next_input, result)| (next_input, map_fn(result)))
+        parser.parse(input).map(|match_status| match match_status {
+            MatchStatus::Match((next_input, result)) => {
+                MatchStatus::Match((next_input, map_fn(result)))
+            }
+            _ => panic!("error in map func, case should never be reached due to enclosing map."),
+        })
     }
 }
