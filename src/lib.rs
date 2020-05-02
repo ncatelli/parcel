@@ -7,6 +7,8 @@
 #[cfg(test)]
 mod tests;
 
+use std::borrow::Borrow;
+
 /// MatchStatus represents a non-error parser result with two cases, signifying
 /// where the parse returned a match or not.
 #[derive(Debug, PartialEq, Clone)]
@@ -30,6 +32,39 @@ where
 {
     fn parse(&self, input: Input) -> ParseResult<'a, Input, Output> {
         self(input)
+    }
+}
+
+pub struct BoxedParser<'a, Input, Output> {
+    parser: Box<dyn Parser<'a, Input, Output> + 'a>,
+}
+
+impl<'a, Input, Output> BoxedParser<'a, Input, Output> {
+    fn new<P>(parser: P) -> Self
+    where
+        P: Parser<'a, Input, Output> + 'a,
+    {
+        BoxedParser {
+            parser: Box::new(parser),
+        }
+    }
+}
+
+impl<'a, Input, Output> Parser<'a, Input, Output> for BoxedParser<'a, Input, Output> {
+    fn parse(&self, input: Input) -> ParseResult<'a, Input, Output> {
+        self.parser.parse(input)
+    }
+}
+
+fn or<'a, P1, P2, A, B>(parser1: P1, thunk_to_parser: impl Fn() -> P2) -> impl Parser<'a, A, B>
+where
+    A: Copy + 'a + Borrow<A>,
+    P1: Parser<'a, A, B>,
+    P2: Parser<'a, A, B>,
+{
+    move |input| match parser1.parse(input) {
+        ok @ Ok(_) => ok,
+        Err(_) => thunk_to_parser().parse(input),
     }
 }
 
