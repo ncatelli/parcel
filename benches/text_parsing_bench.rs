@@ -20,13 +20,21 @@ fn parse_map(c: &mut Criterion) {
 }
 
 fn parse_or(c: &mut Criterion) {
+    let mut group = c.benchmark_group("or combinator");
     let seed_vec = vec!['a', 'b', 'c'];
 
-    c.bench_function("parse char vector with or combinator", |b| {
+    group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = match_char('d').or(|| match_char('a')).parse(&seed_vec);
+            let _expr = parcel::or(match_char('c'), || match_char('a')).parse(&seed_vec);
         });
     });
+
+    group.bench_function("boxed combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = match_char('c').or(|| match_char('a')).parse(&seed_vec);
+        });
+    });
+    group.finish();
 }
 
 criterion_group!(benches, parse_map, parse_or);
