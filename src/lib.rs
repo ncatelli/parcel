@@ -4,8 +4,6 @@
 //! recommend against using it for anything other than experimentation.
 //! Instead, recommending Geal/nom.
 
-use std::sync::Arc;
-
 #[cfg(test)]
 mod tests;
 
@@ -15,22 +13,6 @@ mod tests;
 pub enum MatchStatus<U, T> {
     Match((U, T)),
     NoMatch(U),
-}
-
-/// Provides a map implementation to emulate the map functionality of Option or
-/// Result.
-impl<U, T> MatchStatus<U, T> {
-    pub fn map<V, F>(self, op: Arc<F>) -> MatchStatus<U, V>
-    where
-        F: Fn(T) -> V,
-    {
-        match self {
-            MatchStatus::Match((last_input, result)) => {
-                MatchStatus::Match((last_input, op(result)))
-            }
-            MatchStatus::NoMatch(last_input) => MatchStatus::NoMatch(last_input),
-        }
-    }
 }
 
 /// Represents the state of parser execution, wrapping the above MatchStatus
@@ -57,12 +39,12 @@ where
     P: Parser<'a, A, B>,
     F: Fn(B) -> C + 'a,
 {
-    // There has to be a better way to approach this other than using an Arc/Rc
-    let op = Arc::new(map_fn);
-
     move |input| {
-        parser
-            .parse(input)
-            .map(|match_status| match_status.map(op.clone()))
+        parser.parse(input).map(|match_status| match match_status {
+            MatchStatus::Match((last_input, result)) => {
+                MatchStatus::Match((last_input, map_fn(result)))
+            }
+            MatchStatus::NoMatch(last_input) => MatchStatus::NoMatch(last_input),
+        })
     }
 }
