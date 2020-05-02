@@ -21,6 +21,11 @@ pub enum MatchStatus<U, T> {
 /// and providing an Error string for any problems.
 pub type ParseResult<'a, Input, Output> = Result<MatchStatus<Input, Output>, String>;
 
+/// Parser is the primary trait serving as the basis for all child combinators.
+/// The most important function defined in this trait is parse, which defines
+/// the function that will be called for all child parsers. As a convenience,
+/// Boxed Implementations of Parser functions are included as trait defaults,
+/// allowing chained parser calls to be made for the sake of code cleanliness.
 pub trait Parser<'a, Input, Output> {
     fn parse(&self, input: Input) -> ParseResult<'a, Input, Output>;
 

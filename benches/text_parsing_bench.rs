@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 extern crate parcel;
 use parcel::Parser;
 
@@ -14,7 +14,8 @@ fn parse_map(c: &mut Criterion) {
 
     c.bench_function("parse char vector with map combinator", |b| {
         b.iter(|| {
-            let _expr = parcel::map(match_char('a'), |result| result.to_string()).parse(&seed_vec);
+            let _expr = parcel::map(match_char('a'), |result| result.to_string())
+                .parse(black_box(&seed_vec));
         });
     });
 }
@@ -25,13 +26,15 @@ fn parse_or(c: &mut Criterion) {
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::or(match_char('c'), || match_char('a')).parse(&seed_vec);
+            let _expr = parcel::or(match_char('c'), || match_char('a')).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = match_char('c').or(|| match_char('a')).parse(&seed_vec);
+            let _expr = match_char('c')
+                .or(|| match_char('a'))
+                .parse(black_box(&seed_vec));
         });
     });
     group.finish();
