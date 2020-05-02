@@ -14,12 +14,22 @@ fn match_char<'a>(expected: char) -> impl parcel::Parser<'a, &'a [char], char> {
 fn parse_map(c: &mut Criterion) {
     let seed_vec = vec!['a', 'b', 'c'];
 
-    c.bench_function("parse expressions", |b| {
+    c.bench_function("parse char vector with map combinator", |b| {
         b.iter(|| {
             let _expr = parcel::map(match_char('a'), |result| result.to_string()).parse(&seed_vec);
         });
     });
 }
 
-criterion_group!(benches, parse_map);
+fn parse_or(c: &mut Criterion) {
+    let seed_vec = vec!['a', 'b', 'c'];
+
+    c.bench_function("parse char vector with or combinator", |b| {
+        b.iter(|| {
+            let _expr = match_char('d').or(|| match_char('a')).parse(&seed_vec);
+        });
+    });
+}
+
+criterion_group!(benches, parse_map, parse_or);
 criterion_main!(benches);
