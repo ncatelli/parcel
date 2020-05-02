@@ -50,6 +50,7 @@ where
     }
 }
 
+// Provides a boxed wrapper to any parser trait implementation.
 pub struct BoxedParser<'a, Input, Output> {
     parser: Box<dyn Parser<'a, Input, Output> + 'a>,
 }
