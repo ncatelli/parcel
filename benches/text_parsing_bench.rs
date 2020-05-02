@@ -10,11 +10,20 @@ fn match_char<'a>(expected: char) -> impl parcel::Parser<'a, &'a [char], char> {
 }
 
 fn parse_map(c: &mut Criterion) {
+    let mut group = c.benchmark_group("map combinator");
     let seed_vec = vec!['a', 'b', 'c'];
 
-    c.bench_function("parse char vector with map combinator", |b| {
+    group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
             let _expr = parcel::map(match_char('a'), |result| result.to_string())
+                .parse(black_box(&seed_vec));
+        });
+    });
+
+    group.bench_function("boxed combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = match_char('a')
+                .map(|result| result.to_string())
                 .parse(black_box(&seed_vec));
         });
     });

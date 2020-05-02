@@ -38,6 +38,17 @@ pub trait Parser<'a, Input, Output> {
     {
         BoxedParser::new(or(self, thunk_to_parser))
     }
+
+    fn map<F, NewOutput>(self, map_fn: F) -> BoxedParser<'a, Input, NewOutput>
+    where
+        Self: Sized + 'a,
+        Input: 'a,
+        Output: 'a,
+        NewOutput: 'a,
+        F: Fn(Output) -> NewOutput + 'a,
+    {
+        BoxedParser::new(map(self, map_fn))
+    }
 }
 
 impl<'a, F, Input, Output> Parser<'a, Input, Output> for F
