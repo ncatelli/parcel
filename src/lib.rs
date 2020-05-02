@@ -23,6 +23,16 @@ pub type ParseResult<'a, Input, Output> = Result<MatchStatus<Input, Output>, Str
 
 pub trait Parser<'a, Input, Output> {
     fn parse(&self, input: Input) -> ParseResult<'a, Input, Output>;
+
+    fn or<P>(self, thunk_to_parser: impl Fn() -> P + 'a) -> BoxedParser<'a, Input, Output>
+    where
+        Self: Sized + 'a,
+        Input: Copy + 'a,
+        Output: 'a,
+        P: Parser<'a, Input, Output> + 'a,
+    {
+        BoxedParser::new(or(self, thunk_to_parser))
+    }
 }
 
 impl<'a, F, Input, Output> Parser<'a, Input, Output> for F
@@ -63,8 +73,11 @@ where
     P2: Parser<'a, A, B>,
 {
     move |input| match parser1.parse(input) {
-        ok @ Ok(_) => ok,
-        Err(_) => thunk_to_parser().parse(input),
+        Ok(match_status) => match match_status {
+            m @ MatchStatus::Match(_) => Ok(m),
+            MatchStatus::NoMatch(_) => thunk_to_parser().parse(input),
+        },
+        e @ Err(_) => e,
     }
 }
 

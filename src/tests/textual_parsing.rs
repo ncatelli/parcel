@@ -26,3 +26,13 @@ fn validate_parser_can_map_a_result() {
         map(match_char('a'), |result| { result.to_string() }).parse(&seed_vec)
     );
 }
+
+#[test]
+fn validate_parser_can_match_with_or() {
+    let seed_vec = vec!['a', 'b', 'c'];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((&seed_vec[1..], 'a'))),
+        match_char('d').or(|| match_char('a')).parse(&seed_vec)
+    );
+}
