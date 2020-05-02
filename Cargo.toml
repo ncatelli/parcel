@@ -4,5 +4,11 @@ version = "0.1.0"
 authors = ["Nate Catelli <ncatelli@packetfire.org>"]
 edition = "2018"
 
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "text_parsing_bench"
+harness = false
 
 [dependencies]
