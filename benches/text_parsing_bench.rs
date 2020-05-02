@@ -4,9 +4,7 @@ use parcel::Parser;
 
 fn match_char<'a>(expected: char) -> impl parcel::Parser<'a, &'a [char], char> {
     move |input: &'a [char]| match input.get(0) {
-        Some(next) if *next == expected => {
-            Ok(parcel::MatchStatus::Match((&input[1..], next.clone())))
-        }
+        Some(next) if *next == expected => Ok(parcel::MatchStatus::Match((&input[1..], *next))),
         _ => Ok(parcel::MatchStatus::NoMatch(input)),
     }
 }
