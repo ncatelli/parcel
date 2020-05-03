@@ -49,5 +49,59 @@ fn parse_or(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, parse_map, parse_or);
+fn parse_and_then(c: &mut Criterion) {
+    let mut group = c.benchmark_group("and_then combinator");
+    let seed_vec = vec!['a', 'b', 'c'];
+
+    group.bench_function("combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr =
+                parcel::and_then(match_char('a'), |_| match_char('b')).parse(black_box(&seed_vec));
+        });
+    });
+
+    group.bench_function("boxed combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = match_char('a')
+                .and_then(|_| match_char('b'))
+                .parse(black_box(&seed_vec));
+        });
+    });
+    group.finish();
+}
+
+fn parse_applicatives(c: &mut Criterion) {
+    let mut group = c.benchmark_group("applicatives combinator");
+    let seed_vec = vec!['a', 'b', 'c'];
+
+    group.bench_function("join combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = parcel::join(match_char('a'), match_char('b')).parse(black_box(&seed_vec));
+        });
+    });
+
+    group.bench_function("left combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = parcel::left(parcel::join(match_char('a'), match_char('b')))
+                .parse(black_box(&seed_vec));
+        });
+    });
+
+    group.bench_function("right combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = parcel::right(parcel::join(match_char('a'), match_char('b')))
+                .parse(black_box(&seed_vec));
+        });
+    });
+
+    group.finish();
+}
+
+criterion_group!(
+    benches,
+    parse_map,
+    parse_or,
+    parse_and_then,
+    parse_applicatives
+);
 criterion_main!(benches);
