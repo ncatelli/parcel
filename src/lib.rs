@@ -109,10 +109,25 @@ where
 {
     move |input| {
         parser.parse(input).map(|match_status| match match_status {
-            MatchStatus::Match((last_input, result)) => {
-                MatchStatus::Match((last_input, map_fn(result)))
+            MatchStatus::Match((next_input, result)) => {
+                MatchStatus::Match((next_input, map_fn(result)))
             }
             MatchStatus::NoMatch(last_input) => MatchStatus::NoMatch(last_input),
         })
+    }
+}
+
+pub fn and_then<'a, P, F, P2, A: 'a, B, C>(parser: P, f: F) -> impl Parser<'a, A, C>
+where
+    P: Parser<'a, A, B>,
+    P2: Parser<'a, A, C>,
+    F: Fn(B) -> P2 + 'a,
+{
+    move |input| match parser.parse(input) {
+        Ok(ms) => match ms {
+            MatchStatus::Match((next_input, result)) => f(result).parse(next_input),
+            MatchStatus::NoMatch(last_input) => Ok(MatchStatus::NoMatch(last_input)),
+        },
+        Err(e) => Err(e),
     }
 }
