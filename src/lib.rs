@@ -29,14 +29,26 @@ pub type ParseResult<'a, Input, Output> = Result<MatchStatus<Input, Output>, Str
 pub trait Parser<'a, Input, Output> {
     fn parse(&self, input: Input) -> ParseResult<'a, Input, Output>;
 
-    fn or<P>(self, thunk_to_parser: impl Fn() -> P + 'a) -> BoxedParser<'a, Input, Output>
+    fn or<P>(self, thunk: impl Fn() -> P + 'a) -> BoxedParser<'a, Input, Output>
     where
         Self: Sized + 'a,
         Input: Copy + 'a,
         Output: 'a,
         P: Parser<'a, Input, Output> + 'a,
     {
-        BoxedParser::new(or(self, thunk_to_parser))
+        BoxedParser::new(or(self, thunk))
+    }
+
+    fn and_then<F, NextParser, NewOutput>(self, thunk: F) -> BoxedParser<'a, Input, NewOutput>
+    where
+        Self: Sized + 'a,
+        Input: 'a,
+        Output: 'a,
+        NewOutput: 'a,
+        NextParser: Parser<'a, Input, NewOutput> + 'a,
+        F: Fn(Output) -> NextParser + 'a,
+    {
+        BoxedParser::new(and_then(self, thunk))
     }
 
     fn map<F, NewOutput>(self, map_fn: F) -> BoxedParser<'a, Input, NewOutput>
@@ -117,6 +129,8 @@ where
     }
 }
 
+/// Returns a match if Parser<A, B> matches and then Parser<A, C> matches,
+/// returning the results of the second parser.
 pub fn and_then<'a, P, F, P2, A: 'a, B, C>(parser: P, f: F) -> impl Parser<'a, A, C>
 where
     P: Parser<'a, A, B>,
