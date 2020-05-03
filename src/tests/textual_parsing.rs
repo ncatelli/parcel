@@ -1,4 +1,4 @@
-use crate::{and_then, MatchStatus, Parser};
+use crate::{join, left, right, MatchStatus, Parser};
 
 fn match_char<'a>(expected: char) -> impl Parser<'a, &'a [char], char> {
     move |input: &'a [char]| match input.get(0) {
@@ -52,11 +52,26 @@ fn validate_parser_can_match_with_and_then() {
 }
 
 #[test]
-fn validate_parser_can_match_with_unboxed_and_then() {
+fn validate_parser_joins_values_on_match_with_join_combinator() {
     let seed_vec = vec!['a', 'b', 'c'];
 
     assert_eq!(
+        Ok(MatchStatus::Match((&seed_vec[2..], ('a', 'b')))),
+        join(match_char('a'), match_char('b')).parse(&seed_vec)
+    );
+}
+
+#[test]
+fn validate_applicatives_can_retrieve_each_independent_value() {
+    let seed_vec = vec!['a', 'b', 'c'];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((&seed_vec[2..], 'a'))),
+        left(join(match_char('a'), match_char('b'))).parse(&seed_vec)
+    );
+
+    assert_eq!(
         Ok(MatchStatus::Match((&seed_vec[2..], 'b'))),
-        and_then(match_char('a'), |_| match_char('b')).parse(&seed_vec)
+        right(join(match_char('a'), match_char('b'))).parse(&seed_vec)
     );
 }

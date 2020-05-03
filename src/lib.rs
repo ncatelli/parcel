@@ -113,7 +113,8 @@ where
     }
 }
 
-/// Map a Parser<A, B> to Parser<A, C>.
+/// Map a Parser<A, B> to Parser<A, C> via a closure, map_fn, allowing
+/// transformation of the result B -> C.
 pub fn map<'a, P, F, A: 'a, B, C>(parser: P, map_fn: F) -> impl Parser<'a, A, C>
 where
     P: Parser<'a, A, B>,
@@ -131,9 +132,9 @@ where
 
 /// Returns a match if Parser<A, B> matches and then Parser<A, C> matches,
 /// returning the results of the second parser.
-pub fn and_then<'a, P, F, P2, A: 'a, B, C>(parser: P, f: F) -> impl Parser<'a, A, C>
+pub fn and_then<'a, P1, F, P2, A: 'a, B, C>(parser: P1, f: F) -> impl Parser<'a, A, C>
 where
-    P: Parser<'a, A, B>,
+    P1: Parser<'a, A, B>,
     P2: Parser<'a, A, C>,
     F: Fn(B) -> P2 + 'a,
 {
@@ -144,4 +145,55 @@ where
         },
         Err(e) => Err(e),
     }
+}
+
+// Applicatives
+
+/// Join attempts to match Parser<A, B> and Parser<A, C> after which it merges
+/// the results to Parser<A, (B, C)>.
+pub fn join<'a, P1, P2, A: 'a, B, C>(parser1: P1, parser2: P2) -> impl Parser<'a, A, (B, C)>
+where
+    A: Copy + 'a + Borrow<A>,
+    P1: Parser<'a, A, B>,
+    P2: Parser<'a, A, C>,
+{
+    move |input| {
+        parser1
+            .parse(input)
+            .and_then(|match_status| match match_status {
+                MatchStatus::NoMatch(_) => Ok(MatchStatus::NoMatch(input)),
+                MatchStatus::Match((p1_input, result1)) => {
+                    parser2.parse(p1_input).map(|p2_ms| match p2_ms {
+                        MatchStatus::NoMatch(_) => MatchStatus::NoMatch(input),
+                        MatchStatus::Match((p2_input, result2)) => {
+                            MatchStatus::Match((p2_input, (result1, result2)))
+                        }
+                    })
+                }
+            })
+    }
+}
+
+/// Left expects to take the results of join, returning a Parser<A, (B, C)>
+/// and then extrapolates the value left-hand value, returning a Parser<A, B>.
+pub fn left<'a, P, A, B, C>(parser: P) -> impl Parser<'a, A, B>
+where
+    A: Copy + 'a + Borrow<A>,
+    P: Parser<'a, A, (B, C)> + 'a,
+    B: 'a,
+    C: 'a,
+{
+    parser.map(|(b, _)| b)
+}
+
+/// Right expects to take the results of join, returning a Parser<A, (B, C)>
+/// and then extrapolates the value right-hand value, returning a Parser<A, C>.
+pub fn right<'a, P, A, B, C>(parser: P) -> impl Parser<'a, A, C>
+where
+    A: Copy + 'a + Borrow<A>,
+    P: Parser<'a, A, (B, C)> + 'a,
+    B: 'a,
+    C: 'a,
+{
+    parser.map(|(_, c)| c)
 }
