@@ -61,6 +61,15 @@ pub trait Parser<'a, Input, Output> {
     {
         BoxedParser::new(map(self, map_fn))
     }
+
+    fn to_boxed(self) -> BoxedParser<'a, Input, Output>
+    where
+        Self: Sized + 'a,
+        Input: 'a,
+        Output: 'a,
+    {
+        BoxedParser::new(self)
+    }
 }
 
 impl<'a, F, Input, Output> Parser<'a, Input, Output> for F
@@ -70,6 +79,14 @@ where
 {
     fn parse(&self, input: Input) -> ParseResult<'a, Input, Output> {
         self(input)
+    }
+}
+
+pub struct UnboxedParser {}
+
+impl UnboxedParser {
+    fn new() -> Self {
+        UnboxedParser {}
     }
 }
 
