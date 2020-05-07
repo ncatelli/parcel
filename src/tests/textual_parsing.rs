@@ -76,10 +76,11 @@ fn validate_applicatives_can_retrieve_each_independent_value() {
 
 #[test]
 fn validate_take_while_returns_multiple_matches() {
-    let input = vec!['a', 'a', 'a'];
+    let input = vec!['a', 'a', 'b'];
+    let result = input[0..2].to_vec();
 
     assert_eq!(
-        Ok(MatchStatus::Match((&input[3..], input.clone()))),
+        Ok(MatchStatus::Match((&input[2..], result))),
         take_while(match_char('a')).parse(&input)
     );
 }
