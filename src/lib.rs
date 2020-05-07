@@ -148,7 +148,7 @@ where
 }
 
 /// Consumes values from the input while the parser continues to return a
-/// match.
+/// MatchStatus::Match.
 pub fn take_while<'a, P, A: 'a, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
 where
     A: Copy + 'a,
