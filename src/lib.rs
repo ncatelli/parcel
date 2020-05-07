@@ -147,6 +147,27 @@ where
     }
 }
 
+/// Consumes values from the input while the parser continues to return a
+/// match.
+pub fn take_while<'a, P, A: 'a, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
+where
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
+{
+    move |mut input| {
+        let mut result_acc: Vec<B> = Vec::new();
+        while let Ok(MatchStatus::Match((next_input, result))) = parser.parse(input) {
+            input = next_input;
+            result_acc.push(result);
+        }
+
+        match result_acc.is_empty() {
+            true => Ok(MatchStatus::NoMatch(input)),
+            false => Ok(MatchStatus::Match((input, result_acc))),
+        }
+    }
+}
+
 // Applicatives
 
 /// Join attempts to match Parser<A, B> and Parser<A, C> after which it merges
