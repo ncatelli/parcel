@@ -51,6 +51,24 @@ pub trait Parser<'a, Input, Output> {
         BoxedParser::new(and_then(self, thunk))
     }
 
+    fn zero_or_more(self) -> BoxedParser<'a, Input, Vec<Output>>
+    where
+        Self: Sized + 'a,
+        Input: Copy + 'a,
+        Output: 'a,
+    {
+        BoxedParser::new(zero_or_more(self))
+    }
+
+    fn one_or_more(self) -> BoxedParser<'a, Input, Vec<Output>>
+    where
+        Self: Sized + 'a,
+        Input: Copy + 'a,
+        Output: 'a,
+    {
+        BoxedParser::new(one_or_more(self))
+    }
+
     fn map<F, NewOutput>(self, map_fn: F) -> BoxedParser<'a, Input, NewOutput>
     where
         Self: Sized + 'a,
