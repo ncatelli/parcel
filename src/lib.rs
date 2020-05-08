@@ -147,6 +147,24 @@ where
     }
 }
 
+/// Functions much like an optional parser, consuming between zero and n values
+/// that match the specified parser P.
+pub fn zero_or_more<'a, P, A: 'a, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
+where
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
+{
+    move |mut input| {
+        let mut result_acc: Vec<B> = Vec::new();
+        while let Ok(MatchStatus::Match((next_input, result))) = parser.parse(input) {
+            input = next_input;
+            result_acc.push(result);
+        }
+
+        Ok(MatchStatus::Match((input, result_acc)))
+    }
+}
+
 /// Consumes values from the input while the parser continues to return a
 /// MatchStatus::Match.
 pub fn take_while<'a, P, A: 'a, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
