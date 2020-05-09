@@ -70,6 +70,42 @@ fn parse_and_then(c: &mut Criterion) {
     group.finish();
 }
 
+fn parse_zero_or_more(c: &mut Criterion) {
+    let mut group = c.benchmark_group("zero_or_more combinator");
+    let seed_vec = vec!['a', 'b', 'c'];
+
+    group.bench_function("combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = parcel::zero_or_more(match_char('a')).parse(black_box(&seed_vec));
+        });
+    });
+
+    group.bench_function("boxed combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = match_char('a').zero_or_more().parse(black_box(&seed_vec));
+        });
+    });
+    group.finish();
+}
+
+fn parse_one_or_more(c: &mut Criterion) {
+    let mut group = c.benchmark_group("one_or_more combinator");
+    let seed_vec = vec!['a', 'b', 'c'];
+
+    group.bench_function("combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = parcel::one_or_more(match_char('a')).parse(black_box(&seed_vec));
+        });
+    });
+
+    group.bench_function("boxed combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = match_char('a').one_or_more().parse(black_box(&seed_vec));
+        });
+    });
+    group.finish()
+}
+
 fn parse_applicatives(c: &mut Criterion) {
     let mut group = c.benchmark_group("applicatives combinator");
     let seed_vec = vec!['a', 'b', 'c'];
@@ -102,6 +138,8 @@ criterion_group!(
     parse_map,
     parse_or,
     parse_and_then,
+    parse_zero_or_more,
+    parse_one_or_more,
     parse_applicatives
 );
 criterion_main!(benches);

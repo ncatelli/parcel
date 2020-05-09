@@ -1,4 +1,4 @@
-use crate::{join, left, right, take_while, MatchStatus, Parser};
+use crate::{join, left, one_or_more, right, zero_or_more, MatchStatus, Parser};
 
 fn match_char<'a>(expected: char) -> impl Parser<'a, &'a [char], char> {
     move |input: &'a [char]| match input.get(0) {
@@ -75,22 +75,42 @@ fn validate_applicatives_can_retrieve_each_independent_value() {
 }
 
 #[test]
-fn validate_take_while_returns_multiple_matches() {
+fn validate_one_or_more_returns_multiple_matches() {
     let input = vec!['a', 'a', 'b'];
     let result = input[0..2].to_vec();
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[2..], result))),
-        take_while(match_char('a')).parse(&input)
+        one_or_more(match_char('a')).parse(&input)
     );
 }
 
 #[test]
-fn validate_take_while_returns_no_match_when_no_matches_exist() {
+fn validate_one_or_more_returns_no_match_when_no_matches_exist() {
     let input = vec!['a', 'b', 'c'];
 
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
-        take_while(match_char('b')).parse(&input)
+        one_or_more(match_char('b')).parse(&input)
+    );
+}
+
+#[test]
+fn validate_zero_or_more_returns_match_when_matches_exist() {
+    let input = vec!['a', 'b', 'c'];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((&input[1..], vec!['a']))),
+        zero_or_more(match_char('a')).parse(&input)
+    );
+}
+
+#[test]
+fn validate_zero_or_more_returns_match_when_no_matches_exist() {
+    let input = vec!['a', 'b', 'c'];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((&input[0..], Vec::new()))),
+        zero_or_more(match_char('b')).parse(&input)
     );
 }
