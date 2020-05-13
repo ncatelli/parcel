@@ -4,6 +4,8 @@
 //! recommend against using it for anything other than experimentation.
 //! Instead, recommending Geal/nom.
 
+pub mod prelude;
+
 #[cfg(test)]
 mod tests;
 
