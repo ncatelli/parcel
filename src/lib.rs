@@ -185,6 +185,25 @@ where
     }
 }
 
+/// Functions much like a peek combinator in that it takes a parser (P<A>) and 
+/// a closure that accepts &A. The Parser will only return a match if F asserts
+/// a match. This is useful for cases of one_or_more or zero_or_more where a
+/// match must terminate.
+fn predicate<'a, P, A, F>(parser: P, next: F) -> impl Parser<'a, A>
+where
+    P: Parser<'a, A>,
+    F: Fn(&A) -> bool,
+{
+    move |input| {
+        if let Ok(MatchStatus::Match(next_input, value)) = parser.parse(input) {
+            if predicate(&value) {
+                return Ok(MatchStatus::Match(next_input, value));
+            }
+        }
+        Ok(MatchStatus::NoMatch(input))
+    }
+}
+
 /// Consumes values from the input while the parser continues to return a
 /// MatchStatus::Match.
 pub fn one_or_more<'a, P, A: 'a, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
