@@ -189,7 +189,7 @@ where
 /// and a closure that accepts &B. The Parser will only return a match if F
 /// asserts a match. This is useful for cases of one_or_more or zero_or_more
 /// where a match must terminate.
-fn predicate<'a, P, A, B, F>(parser: P, pred_case: F) -> impl Parser<'a, A, B>
+pub fn predicate<'a, P, A, B, F>(parser: P, pred_case: F) -> impl Parser<'a, A, B>
 where
     A: Copy + 'a,
     P: Parser<'a, A, B>,
