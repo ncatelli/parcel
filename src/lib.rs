@@ -185,19 +185,20 @@ where
     }
 }
 
-/// Functions much like a peek combinator in that it takes a parser (P<A>) and 
-/// a closure that accepts &A. The Parser will only return a match if F asserts
-/// a match. This is useful for cases of one_or_more or zero_or_more where a
-/// match must terminate.
-fn predicate<'a, P, A, F>(parser: P, next: F) -> impl Parser<'a, A>
+/// Functions much like a peek combinator in that it takes a parser (P<A, B>)
+/// and a closure that accepts &B. The Parser will only return a match if F
+/// asserts a match. This is useful for cases of one_or_more or zero_or_more
+/// where a match must terminate.
+fn predicate<'a, P, A, B, F>(parser: P, pred_case: F) -> impl Parser<'a, A, B>
 where
-    P: Parser<'a, A>,
-    F: Fn(&A) -> bool,
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
+    F: Fn(&B) -> bool,
 {
     move |input| {
-        if let Ok(MatchStatus::Match(next_input, value)) = parser.parse(input) {
-            if predicate(&value) {
-                return Ok(MatchStatus::Match(next_input, value));
+        if let Ok(MatchStatus::Match((next_input, value))) = parser.parse(input) {
+            if pred_case(&value) {
+                return Ok(MatchStatus::Match((next_input, value)));
             }
         }
         Ok(MatchStatus::NoMatch(input))
@@ -218,9 +219,10 @@ where
             result_acc.push(result);
         }
 
-        match result_acc.is_empty() {
-            true => Ok(MatchStatus::NoMatch(input)),
-            false => Ok(MatchStatus::Match((input, result_acc))),
+        if result_acc.is_empty() {
+            Ok(MatchStatus::NoMatch(input))
+        } else {
+            Ok(MatchStatus::Match((input, result_acc)))
         }
     }
 }
