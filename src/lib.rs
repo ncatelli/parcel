@@ -53,6 +53,16 @@ pub trait Parser<'a, Input, Output> {
         BoxedParser::new(and_then(self, thunk))
     }
 
+    fn predicate<F>(self, predicate_case: F) -> BoxedParser<'a, Input, Output>
+    where
+        Self: Sized + 'a,
+        Input: Copy + 'a,
+        Output: 'a,
+        F: Fn(&Output) -> bool + 'a,
+    {
+        BoxedParser::new(predicate(self, predicate_case))
+    }
+
     fn zero_or_more(self) -> BoxedParser<'a, Input, Vec<Output>>
     where
         Self: Sized + 'a,
@@ -167,6 +177,26 @@ where
     }
 }
 
+/// Functions much like a peek combinator in that it takes a parser (P<A, B>)
+/// and a closure that accepts &B. The Parser will only return a match if F
+/// asserts a match. This is useful for cases of one_or_more or zero_or_more
+/// where a match must terminate.
+pub fn predicate<'a, P, A, B, F>(parser: P, pred_case: F) -> impl Parser<'a, A, B>
+where
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
+    F: Fn(&B) -> bool,
+{
+    move |input| {
+        if let Ok(MatchStatus::Match((next_input, value))) = parser.parse(input) {
+            if pred_case(&value) {
+                return Ok(MatchStatus::Match((next_input, value)));
+            }
+        }
+        Ok(MatchStatus::NoMatch(input))
+    }
+}
+
 /// Functions much like an optional parser, consuming between zero and n values
 /// that match the specified parser P.
 pub fn zero_or_more<'a, P, A: 'a, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
@@ -199,9 +229,10 @@ where
             result_acc.push(result);
         }
 
-        match result_acc.is_empty() {
-            true => Ok(MatchStatus::NoMatch(input)),
-            false => Ok(MatchStatus::Match((input, result_acc))),
+        if result_acc.is_empty() {
+            Ok(MatchStatus::NoMatch(input))
+        } else {
+            Ok(MatchStatus::Match((input, result_acc)))
         }
     }
 }

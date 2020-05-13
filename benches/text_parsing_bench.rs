@@ -4,7 +4,14 @@ use parcel::Parser;
 
 fn match_char<'a>(expected: char) -> impl parcel::Parser<'a, &'a [char], char> {
     move |input: &'a [char]| match input.get(0) {
-        Some(next) if *next == expected => Ok(parcel::MatchStatus::Match((&input[1..], *next))),
+        Some(&next) if next == expected => Ok(parcel::MatchStatus::Match((&input[1..], next))),
+        _ => Ok(parcel::MatchStatus::NoMatch(input)),
+    }
+}
+
+fn any_char<'a>() -> impl parcel::Parser<'a, &'a [char], char> {
+    move |input: &'a [char]| match input.get(0) {
+        Some(&next) => Ok(parcel::MatchStatus::Match((&input[1..], next))),
         _ => Ok(parcel::MatchStatus::NoMatch(input)),
     }
 }
@@ -64,6 +71,26 @@ fn parse_and_then(c: &mut Criterion) {
         b.iter(|| {
             let _expr = match_char('a')
                 .and_then(|_| match_char('b'))
+                .parse(black_box(&seed_vec));
+        });
+    });
+    group.finish();
+}
+
+fn parse_predicate(c: &mut Criterion) {
+    let mut group = c.benchmark_group("predicate combinator");
+    let seed_vec = vec!['a', 'b', 'c'];
+
+    group.bench_function("combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = parcel::predicate(any_char(), |&c| c != 'b').parse(black_box(&seed_vec));
+        });
+    });
+
+    group.bench_function("boxed combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = any_char()
+                .predicate(|&c| c != 'b')
                 .parse(black_box(&seed_vec));
         });
     });
@@ -138,6 +165,7 @@ criterion_group!(
     parse_map,
     parse_or,
     parse_and_then,
+    parse_predicate,
     parse_zero_or_more,
     parse_one_or_more,
     parse_applicatives
