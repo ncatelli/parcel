@@ -91,6 +91,15 @@ pub trait Parser<'a, Input, Output> {
     {
         BoxedParser::new(map(self, map_fn))
     }
+
+    fn skip(self) -> BoxedParser<'a, Input, Output>
+    where
+        Self: Sized + 'a,
+        Input: 'a,
+        Output: 'a,
+    {
+        BoxedParser::new(skip(self))
+    }
 }
 
 impl<'a, F, Input, Output> Parser<'a, Input, Output> for F
@@ -157,6 +166,20 @@ where
             }
             MatchStatus::NoMatch(last_input) => MatchStatus::NoMatch(last_input),
         })
+    }
+}
+
+/// Attempts to match a parser, P, skipping the input if it matches. For cases
+/// P doesn't match the previous input is returned.
+pub fn skip<'a, P, A, B>(parser: P) -> impl Parser<'a, A, B>
+where
+    A: 'a,
+    P: Parser<'a, A, B>,
+{
+    move |input| match parser.parse(input) {
+        Ok(MatchStatus::Match((next_input, _))) => Ok(MatchStatus::NoMatch(next_input)),
+        Ok(MatchStatus::NoMatch(last_input)) => Ok(MatchStatus::NoMatch(last_input)),
+        Err(e) => Err(e),
     }
 }
 

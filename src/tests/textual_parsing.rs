@@ -38,6 +38,16 @@ fn parser_can_map_a_result() {
 }
 
 #[test]
+fn parser_can_skip_a_result() {
+    let input = vec!['a', 'b', 'c'];
+
+    assert_eq!(
+        Ok(MatchStatus::NoMatch(&input[1..])),
+        match_char('a').skip().parse(&input)
+    );
+}
+
+#[test]
 fn parser_can_match_with_or() {
     let input = vec!['a', 'b', 'c'];
 

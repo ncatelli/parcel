@@ -36,6 +36,23 @@ fn parse_map(c: &mut Criterion) {
     });
 }
 
+fn parse_skip(c: &mut Criterion) {
+    let mut group = c.benchmark_group("skip combinator");
+    let seed_vec = vec!['a', 'b', 'c'];
+
+    group.bench_function("combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = parcel::skip(match_char('a')).parse(black_box(&seed_vec));
+        });
+    });
+
+    group.bench_function("boxed combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = match_char('a').skip().parse(black_box(&seed_vec));
+        });
+    });
+}
+
 fn parse_or(c: &mut Criterion) {
     let mut group = c.benchmark_group("or combinator");
     let seed_vec = vec!['a', 'b', 'c'];
@@ -163,6 +180,7 @@ fn parse_applicatives(c: &mut Criterion) {
 criterion_group!(
     benches,
     parse_map,
+    parse_skip,
     parse_or,
     parse_and_then,
     parse_predicate,
