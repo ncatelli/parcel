@@ -185,8 +185,9 @@ where
 
 /// Returns a match if Parser<A, B> matches and then Parser<A, C> matches,
 /// returning the results of the second parser.
-pub fn and_then<'a, P1, F, P2, A: 'a, B, C>(parser: P1, f: F) -> impl Parser<'a, A, C>
+pub fn and_then<'a, P1, F, P2, A, B, C>(parser: P1, f: F) -> impl Parser<'a, A, C>
 where
+    A: 'a,
     P1: Parser<'a, A, B>,
     P2: Parser<'a, A, C>,
     F: Fn(B) -> P2 + 'a,
@@ -222,7 +223,7 @@ where
 
 /// Functions much like an optional parser, consuming between zero and n values
 /// that match the specified parser P.
-pub fn zero_or_more<'a, P, A: 'a, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
+pub fn zero_or_more<'a, P, A, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
 where
     A: Copy + 'a,
     P: Parser<'a, A, B>,
@@ -240,7 +241,7 @@ where
 
 /// Consumes values from the input while the parser continues to return a
 /// MatchStatus::Match.
-pub fn one_or_more<'a, P, A: 'a, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
+pub fn one_or_more<'a, P, A, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
 where
     A: Copy + 'a,
     P: Parser<'a, A, B>,
@@ -264,9 +265,9 @@ where
 
 /// Join attempts to match Parser<A, B> and Parser<A, C> after which it merges
 /// the results to Parser<A, (B, C)>.
-pub fn join<'a, P1, P2, A: 'a, B, C>(parser1: P1, parser2: P2) -> impl Parser<'a, A, (B, C)>
+pub fn join<'a, P1, P2, A, B, C>(parser1: P1, parser2: P2) -> impl Parser<'a, A, (B, C)>
 where
-    A: Copy + 'a + Borrow<A>,
+    A: Copy + Borrow<A> + 'a,
     P1: Parser<'a, A, B>,
     P2: Parser<'a, A, C>,
 {
@@ -291,10 +292,10 @@ where
 /// and then extrapolates the value left-hand value, returning a Parser<A, B>.
 pub fn left<'a, P, A, B, C>(parser: P) -> impl Parser<'a, A, B>
 where
-    A: Copy + 'a + Borrow<A>,
-    P: Parser<'a, A, (B, C)> + 'a,
+    A: Copy + Borrow<A> + 'a,
     B: 'a,
     C: 'a,
+    P: Parser<'a, A, (B, C)> + 'a,
 {
     parser.map(|(b, _)| b)
 }
@@ -303,10 +304,10 @@ where
 /// and then extrapolates the value right-hand value, returning a Parser<A, C>.
 pub fn right<'a, P, A, B, C>(parser: P) -> impl Parser<'a, A, C>
 where
-    A: Copy + 'a + Borrow<A>,
-    P: Parser<'a, A, (B, C)> + 'a,
+    A: Copy + Borrow<A> + 'a,
     B: 'a,
     C: 'a,
+    P: Parser<'a, A, (B, C)> + 'a,
 {
     parser.map(|(_, c)| c)
 }
