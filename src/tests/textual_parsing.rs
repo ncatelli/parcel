@@ -1,5 +1,5 @@
 use crate::prelude::v1::*;
-use crate::{join, left, one_or_more, predicate, right, zero_or_more, MatchStatus};
+use crate::{join, left, one_or_more, optional, predicate, right, zero_or_more, MatchStatus};
 
 fn match_char<'a>(expected: char) -> impl Parser<'a, &'a [char], char> {
     move |input: &'a [char]| match input.get(0) {
@@ -159,5 +159,25 @@ fn zero_or_more_returns_match_when_no_matches_exist() {
     assert_eq!(
         Ok(MatchStatus::Match((&input[0..], Vec::new()))),
         zero_or_more(match_char('b')).parse(&input)
+    );
+}
+
+#[test]
+fn optional_matches_on_zero() {
+    let input = vec!['a', 'b', 'c'];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((&input[0..], None))),
+        optional(match_char('b')).parse(&input)
+    );
+}
+
+#[test]
+fn optional_matches_on_one() {
+    let input = vec!['a', 'b', 'c'];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((&input[1..], Some('a')))),
+        optional(match_char('a')).parse(&input)
     );
 }
