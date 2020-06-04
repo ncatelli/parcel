@@ -100,6 +100,15 @@ pub trait Parser<'a, Input, Output> {
     {
         BoxedParser::new(skip(self))
     }
+
+    fn optional(self) -> BoxedParser<'a, Input, Option<Output>>
+    where
+        Self: Sized + 'a,
+        Input: Copy + 'a,
+        Output: 'a,
+    {
+        BoxedParser::new(optional(self))
+    }
 }
 
 impl<'a, F, Input, Output> Parser<'a, Input, Output> for F
@@ -258,6 +267,21 @@ where
         } else {
             Ok(MatchStatus::Match((input, result_acc)))
         }
+    }
+}
+
+/// Matches zero or one
+pub fn optional<'a, P, A, B>(parser: P) -> impl Parser<'a, A, Option<B>>
+where
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
+{
+    move |input| match parser.parse(input) {
+        Ok(MatchStatus::Match((next_input, res))) => {
+            Ok(MatchStatus::Match((next_input, Some(res))))
+        }
+        Ok(MatchStatus::NoMatch(last_input)) => Ok(MatchStatus::Match((last_input, None))),
+        Err(e) => Err(e),
     }
 }
 

@@ -150,6 +150,24 @@ fn parse_one_or_more(c: &mut Criterion) {
     group.finish()
 }
 
+fn parse_optional(c: &mut Criterion) {
+    let mut group = c.benchmark_group("optional combinator");
+    let seed_vec = vec!['a', 'b', 'c'];
+
+    group.bench_function("combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = parcel::optional(match_char('a')).parse(black_box(&seed_vec));
+        });
+    });
+
+    group.bench_function("boxed combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = match_char('a').optional().parse(black_box(&seed_vec));
+        });
+    });
+    group.finish()
+}
+
 fn parse_applicatives(c: &mut Criterion) {
     let mut group = c.benchmark_group("applicatives combinator");
     let seed_vec = vec!['a', 'b', 'c'];
@@ -186,6 +204,7 @@ criterion_group!(
     parse_predicate,
     parse_zero_or_more,
     parse_one_or_more,
+    parse_optional,
     parse_applicatives
 );
 criterion_main!(benches);
