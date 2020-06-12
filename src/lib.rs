@@ -161,6 +161,29 @@ where
     }
 }
 
+/// Provides a convenient shortcut for the or combinator. allowing the passing
+/// of an array of matching parsers, returning the result of the first matching
+/// parser or a NoMatch if none match.
+pub fn one_of<'a, P, A, B>(parsers: Vec<P>) -> impl Parser<'a, A, B>
+where
+    A: Copy + 'a + Borrow<A>,
+    P: Parser<'a, A, B>,
+{
+    move |input| {
+        for parser in parsers.iter() {
+            match parser.parse(input) {
+                Ok(match_status) => match match_status {
+                    m @ MatchStatus::Match(_) => return Ok(m),
+                    MatchStatus::NoMatch(_) => continue,
+                },
+                e @ Err(_) => return e,
+            };
+        }
+
+        Ok(MatchStatus::NoMatch(input))
+    }
+}
+
 /// Map a Parser<A, B> to Parser<A, C> via a closure, map_fn, allowing
 /// transformation of the result B -> C.
 pub fn map<'a, P, F, A: 'a, B, C>(parser: P, map_fn: F) -> impl Parser<'a, A, C>
