@@ -68,6 +68,16 @@ fn parser_can_match_with_or() {
 }
 
 #[test]
+fn parser_can_match_with_one_of() {
+    let input = vec!['a', 'b', 'c'];
+    let parsers = vec![match_char('b'), match_char('c'), match_char('a')];
+    assert_eq!(
+        Ok(MatchStatus::Match((&input[1..], 'a'))),
+        crate::one_of(parsers).parse(&input)
+    );
+}
+
+#[test]
 fn parser_can_match_with_and_then() {
     let input = vec!['a', 'b', 'c'];
 

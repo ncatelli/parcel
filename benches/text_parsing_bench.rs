@@ -73,6 +73,19 @@ fn parse_or(c: &mut Criterion) {
     group.finish();
 }
 
+fn parse_one_of(c: &mut Criterion) {
+    let mut group = c.benchmark_group("one_of combinator");
+    let seed_vec = vec!['a', 'b', 'c'];
+
+    group.bench_function("combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = parcel::one_of(vec![match_char('c'), match_char('b'), match_char('a')])
+                .parse(black_box(&seed_vec));
+        });
+    });
+    group.finish();
+}
+
 fn parse_and_then(c: &mut Criterion) {
     let mut group = c.benchmark_group("and_then combinator");
     let seed_vec = vec!['a', 'b', 'c'];
@@ -200,6 +213,7 @@ criterion_group!(
     parse_map,
     parse_skip,
     parse_or,
+    parse_one_of,
     parse_and_then,
     parse_predicate,
     parse_zero_or_more,
