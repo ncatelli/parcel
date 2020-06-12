@@ -83,14 +83,6 @@ fn parse_one_of(c: &mut Criterion) {
                 .parse(black_box(&seed_vec));
         });
     });
-
-    group.bench_function("boxed combinator with char vec", |b| {
-        b.iter(|| {
-            let _expr = match_char('c')
-                .or(|| match_char('a'))
-                .parse(black_box(&seed_vec));
-        });
-    });
     group.finish();
 }
 
