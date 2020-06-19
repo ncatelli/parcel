@@ -3,6 +3,7 @@ name = "parcel"
 version = "1.5.0"
 authors = ["Nate Catelli <ncatelli@packetfire.org>"]
 edition = "2018"
+publish = false
 
 [dev-dependencies]
 criterion = "0.3"
