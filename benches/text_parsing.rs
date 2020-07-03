@@ -22,15 +22,14 @@ fn parse_map(c: &mut Criterion) {
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::map(match_char('a'), |result| result.to_string())
-                .parse(black_box(&seed_vec));
+            let _expr = parcel::map(match_char('a'), |result| result).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with char vec", |b| {
         b.iter(|| {
             let _expr = match_char('a')
-                .map(|result| result.to_string())
+                .map(|result| result)
                 .parse(black_box(&seed_vec));
         });
     });
