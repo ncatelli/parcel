@@ -22,7 +22,7 @@ fn parse_map(c: &mut Criterion) {
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = parcel::map(match_byte(0x00), |result| result.to_string())
+            let _expr = parcel::map(match_byte(0x00), |result| result)
                 .parse(black_box(&seed_vec));
         });
     });
@@ -30,7 +30,7 @@ fn parse_map(c: &mut Criterion) {
     group.bench_function("boxed combinator with byte vec", |b| {
         b.iter(|| {
             let _expr = match_byte(0x00)
-                .map(|result| result.to_string())
+                .map(|result| result)
                 .parse(black_box(&seed_vec));
         });
     });
