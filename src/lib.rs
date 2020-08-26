@@ -242,6 +242,8 @@ where
     }
 }
 
+/// Much like the one_or_more parser, this attempts to consume until n matches
+/// have occured. A match is returned if 1 < result count <= n.
 pub fn take_until_n<'a, P, A, B>(parser: P, n: usize) -> impl Parser<'a, A, Vec<B>>
 where
     A: Copy + 'a,
@@ -260,7 +262,11 @@ where
             }
         }
 
-        Ok(MatchStatus::Match((input, result_acc)))
+        if res_cnt > 0 {
+            Ok(MatchStatus::Match((input, result_acc)))
+        } else {
+            Ok(MatchStatus::NoMatch(input))
+        }
     }
 }
 
