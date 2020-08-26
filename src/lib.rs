@@ -10,6 +10,7 @@ pub mod prelude;
 mod tests;
 
 use std::borrow::Borrow;
+use std::ops::Index;
 
 /// MatchStatus represents a non-error parser result with two cases, signifying
 /// where the parse returned a match or not.
@@ -247,6 +248,36 @@ where
 pub fn take_until_n<'a, P, A, B>(parser: P, n: usize) -> impl Parser<'a, A, Vec<B>>
 where
     A: Copy + 'a,
+    P: Parser<'a, A, B>,
+{
+    move |mut input| {
+        let mut res_cnt = 0;
+        let mut result_acc: Vec<B> = Vec::new();
+        while let Ok(MatchStatus::Match((next_input, result))) = parser.parse(input) {
+            if res_cnt < n {
+                input = next_input;
+                result_acc.push(result);
+                res_cnt += 1;
+            } else {
+                break;
+            }
+        }
+
+        if res_cnt > 0 {
+            Ok(MatchStatus::Match((input, result_acc)))
+        } else {
+            Ok(MatchStatus::NoMatch(input))
+        }
+    }
+}
+
+/// take_n must match exactly n sequential matches of parser: P otherwise
+/// NoMatch is returned.
+///
+/// TODO: This is just a copy of take_until_n right now
+pub fn take_n<'a, P, A, B>(parser: P, n: usize) -> impl Parser<'a, A, Vec<B>>
+where
+    A: Copy + Index<usize> + 'a,
     P: Parser<'a, A, B>,
 {
     move |mut input| {
