@@ -22,8 +22,7 @@ fn parse_map(c: &mut Criterion) {
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = parcel::map(match_byte(0x00), |result| result)
-                .parse(black_box(&seed_vec));
+            let _expr = parcel::map(match_byte(0x00), |result| result).parse(black_box(&seed_vec));
         });
     });
 
@@ -103,6 +102,24 @@ fn parse_and_then(c: &mut Criterion) {
             let _expr = match_byte(0x00)
                 .and_then(|_| match_byte(0x01))
                 .parse(black_box(&seed_vec));
+        });
+    });
+    group.finish();
+}
+
+fn parse_take_until_n(c: &mut Criterion) {
+    let mut group = c.benchmark_group("take_until_n combinator");
+    let seed_vec = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
+
+    group.bench_function("combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = parcel::take_until_n(match_byte(0x00), 4).parse(black_box(&seed_vec));
+        });
+    });
+
+    group.bench_function("boxed combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = match_byte(0x00).take_until_n(4).parse(black_box(&seed_vec));
         });
     });
     group.finish();
@@ -217,6 +234,7 @@ criterion_group!(
     parse_or,
     parse_one_of,
     parse_and_then,
+    parse_take_until_n,
     parse_predicate,
     parse_zero_or_more,
     parse_one_or_more,
