@@ -130,6 +130,16 @@ fn take_until_n_will_return_as_many_matches_as_possible() {
 }
 
 #[test]
+fn take_until_n_returns_a_no_match_on_no_match() {
+    let input = vec!['a', 'b', 'c'];
+
+    assert_eq!(
+        Ok(MatchStatus::NoMatch(&input[0..])),
+        match_char('d').take_until_n(2).parse(&input)
+    );
+}
+
+#[test]
 fn parser_joins_values_on_match_with_join_combinator() {
     let input = vec!['a', 'b', 'c'];
 
