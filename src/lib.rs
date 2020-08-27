@@ -280,9 +280,7 @@ where
 }
 
 /// take_n must match exactly n sequential matches of parser: P otherwise
-/// NoMatch is returned.
-///
-/// TODO: This is just a copy of take_until_n right now
+/// NoMatch is returned. On a match, a Vec of the results is returned.
 pub fn take_n<'a, P, A, B>(parser: P, n: usize) -> impl Parser<'a, A, Vec<B>>
 where
     A: Copy + 'a,
