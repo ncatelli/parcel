@@ -1,5 +1,8 @@
 use crate::prelude::v1::*;
-use crate::{join, left, one_or_more, optional, predicate, right, zero_or_more, MatchStatus};
+use crate::{
+    join, left, one_or_more, optional, predicate, right, take_n, take_until_n, zero_or_more,
+    MatchStatus,
+};
 
 fn match_byte<'a>(expected: u8) -> impl Parser<'a, &'a [u8], u8> {
     move |input: &'a [u8]| match input.get(0) {
@@ -84,6 +87,118 @@ fn parser_can_match_with_and_then() {
         match_byte(0x00)
             .and_then(|_| match_byte(0x01))
             .parse(&input)
+    );
+}
+
+#[test]
+fn parser_can_match_with_take_until_n() {
+    let input = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((
+            &input[4..],
+            vec![0x00, 0x00, 0x00, 0x00]
+        ))),
+        take_until_n(match_byte(0x00), 4).parse(&input)
+    );
+}
+
+#[test]
+fn parser_can_match_with_boxed_take_until_n() {
+    let input = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((
+            &input[4..],
+            vec![0x00, 0x00, 0x00, 0x00]
+        ))),
+        match_byte(0x00).take_until_n(4).parse(&input)
+    );
+}
+
+#[test]
+fn take_until_n_will_match_only_up_to_specified_limit() {
+    let input = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((&input[3..], vec![0x00, 0x00, 0x00]))),
+        match_byte(0x00).take_until_n(3).parse(&input)
+    );
+}
+
+#[test]
+fn take_until_n_will_return_as_many_matches_as_possible() {
+    let input = vec![0x00, 0x00, 0x01, 0x02];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+        match_byte(0x00).take_until_n(3).parse(&input)
+    );
+}
+
+#[test]
+fn take_until_n_returns_a_no_match_on_no_match() {
+    let input = vec![0x00, 0x01, 0x02];
+
+    assert_eq!(
+        Ok(MatchStatus::NoMatch(&input[0..])),
+        match_byte(0x03).take_until_n(2).parse(&input)
+    );
+}
+
+#[test]
+fn parser_can_match_with_take_n() {
+    let input = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((
+            &input[4..],
+            vec![0x00, 0x00, 0x00, 0x00]
+        ))),
+        take_n(match_byte(0x00), 4).parse(&input)
+    );
+}
+
+#[test]
+fn parser_can_match_with_boxed_take_n() {
+    let input = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((
+            &input[4..],
+            vec![0x00, 0x00, 0x00, 0x00]
+        ))),
+        match_byte(0x00).take_n(4).parse(&input)
+    );
+}
+
+#[test]
+fn take_n_will_match_only_up_to_specified_limit() {
+    let input = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((&input[3..], vec![0x00, 0x00, 0x00]))),
+        match_byte(0x00).take_n(3).parse(&input)
+    );
+}
+
+#[test]
+fn take_n_will_not_match_if_unable_to_match_n_results() {
+    let input = vec![0x00, 0x00, 0x01, 0x02];
+
+    assert_eq!(
+        Ok(MatchStatus::NoMatch(&input[0..])),
+        match_byte(0x00).take_n(3).parse(&input)
+    );
+}
+
+#[test]
+fn take_n_returns_a_no_match_on_no_match() {
+    let input = vec![0x00, 0x01, 0x02];
+
+    assert_eq!(
+        Ok(MatchStatus::NoMatch(&input[0..])),
+        match_byte(0x03).take_n(2).parse(&input)
     );
 }
 

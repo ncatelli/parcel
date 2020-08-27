@@ -53,6 +53,24 @@ pub trait Parser<'a, Input, Output> {
         BoxedParser::new(and_then(self, thunk))
     }
 
+    fn take_until_n(self, n: usize) -> BoxedParser<'a, Input, Vec<Output>>
+    where
+        Self: Sized + 'a,
+        Input: Copy + 'a,
+        Output: 'a,
+    {
+        BoxedParser::new(take_until_n(self, n))
+    }
+
+    fn take_n(self, n: usize) -> BoxedParser<'a, Input, Vec<Output>>
+    where
+        Self: Sized + 'a,
+        Input: Copy + 'a,
+        Output: 'a,
+    {
+        BoxedParser::new(take_n(self, n))
+    }
+
     fn predicate<F>(self, predicate_case: F) -> BoxedParser<'a, Input, Output>
     where
         Self: Sized + 'a,
@@ -230,6 +248,64 @@ where
             MatchStatus::NoMatch(last_input) => Ok(MatchStatus::NoMatch(last_input)),
         },
         Err(e) => Err(e),
+    }
+}
+
+/// Much like the one_or_more parser, this attempts to consume until n matches
+/// have occured. A match is returned if 1 < result count <= n.
+pub fn take_until_n<'a, P, A, B>(parser: P, n: usize) -> impl Parser<'a, A, Vec<B>>
+where
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
+{
+    move |mut input| {
+        let mut res_cnt = 0;
+        let mut result_acc: Vec<B> = Vec::new();
+        while let Ok(MatchStatus::Match((next_input, result))) = parser.parse(input) {
+            if res_cnt < n {
+                input = next_input;
+                result_acc.push(result);
+                res_cnt += 1;
+            } else {
+                break;
+            }
+        }
+
+        if res_cnt > 0 {
+            Ok(MatchStatus::Match((input, result_acc)))
+        } else {
+            Ok(MatchStatus::NoMatch(input))
+        }
+    }
+}
+
+/// take_n must match exactly n sequential matches of parser: P otherwise
+/// NoMatch is returned. On a match, a Vec of the results is returned.
+pub fn take_n<'a, P, A, B>(parser: P, n: usize) -> impl Parser<'a, A, Vec<B>>
+where
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
+{
+    move |input| {
+        let mut ni: A = input;
+        let mut res_cnt = 0;
+        let mut result_acc: Vec<B> = Vec::new();
+
+        while let Ok(MatchStatus::Match((next_input, result))) = parser.parse(ni) {
+            if res_cnt < n {
+                ni = next_input;
+                result_acc.push(result);
+                res_cnt += 1;
+            } else {
+                break;
+            }
+        }
+
+        if res_cnt == n {
+            Ok(MatchStatus::Match((ni, result_acc)))
+        } else {
+            Ok(MatchStatus::NoMatch(input))
+        }
     }
 }
 
