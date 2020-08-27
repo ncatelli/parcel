@@ -252,6 +252,7 @@ criterion_group!(
     parse_or,
     parse_one_of,
     parse_and_then,
+    parse_take_n,
     parse_take_until_n,
     parse_predicate,
     parse_zero_or_more,
