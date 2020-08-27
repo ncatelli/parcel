@@ -125,6 +125,24 @@ fn parse_take_until_n(c: &mut Criterion) {
     group.finish();
 }
 
+fn parse_take_n(c: &mut Criterion) {
+    let mut group = c.benchmark_group("take_n combinator");
+    let seed_vec = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
+
+    group.bench_function("combinator with byte vec", |b| {
+        b.iter(|| {
+            let _expr = parcel::take_n(match_byte(0x00), 4).parse(black_box(&seed_vec));
+        });
+    });
+
+    group.bench_function("boxed combinator with byte vec", |b| {
+        b.iter(|| {
+            let _expr = match_byte(0x00).take_n(4).parse(black_box(&seed_vec));
+        });
+    });
+    group.finish();
+}
+
 fn parse_predicate(c: &mut Criterion) {
     let mut group = c.benchmark_group("predicate combinator");
     let seed_vec = vec![0x00, 0x01, 0x02];
