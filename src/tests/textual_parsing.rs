@@ -171,7 +171,7 @@ fn take_n_will_match_only_up_to_specified_limit() {
 }
 
 #[test]
-fn take_n_will_fail_if_unable_to_match_defined_result() {
+fn take_n_will_not_match_if_unable_to_match_n_results() {
     let input = vec!['a', 'a', 'b', 'c'];
 
     assert_eq!(
