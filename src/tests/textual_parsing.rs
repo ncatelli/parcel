@@ -1,6 +1,7 @@
 use crate::prelude::v1::*;
 use crate::{
-    join, left, one_or_more, optional, predicate, right, take_until_n, zero_or_more, MatchStatus,
+    join, left, one_or_more, optional, predicate, right, take_n, take_until_n, zero_or_more,
+    MatchStatus,
 };
 
 fn match_char<'a>(expected: char) -> impl Parser<'a, &'a [char], char> {
@@ -136,6 +137,56 @@ fn take_until_n_returns_a_no_match_on_no_match() {
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
         match_char('d').take_until_n(2).parse(&input)
+    );
+}
+
+#[test]
+fn parser_can_match_with_take_n() {
+    let input = vec!['a', 'a', 'a', 'a', 'b', 'c'];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((&input[4..], vec!['a', 'a', 'a', 'a']))),
+        take_n(match_char('a'), 4).parse(&input)
+    );
+}
+
+#[test]
+fn parser_can_match_with_boxed_take_n() {
+    let input = vec!['a', 'a', 'a', 'a', 'b', 'c'];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((&input[4..], vec!['a', 'a', 'a', 'a']))),
+        match_char('a').take_n(4).parse(&input)
+    );
+}
+
+#[test]
+fn take_n_will_match_only_up_to_specified_limit() {
+    let input = vec!['a', 'a', 'a', 'a', 'b', 'c'];
+
+    assert_eq!(
+        Ok(MatchStatus::Match((&input[3..], vec!['a', 'a', 'a']))),
+        match_char('a').take_n(3).parse(&input)
+    );
+}
+
+#[test]
+fn take_n_will_fail_if_unable_to_match_defined_result() {
+    let input = vec!['a', 'a', 'b', 'c'];
+
+    assert_eq!(
+        Ok(MatchStatus::NoMatch(&input[0..])),
+        match_char('a').take_n(3).parse(&input)
+    );
+}
+
+#[test]
+fn take_n_returns_a_no_match_on_no_match() {
+    let input = vec!['a', 'b', 'c'];
+
+    assert_eq!(
+        Ok(MatchStatus::NoMatch(&input[0..])),
+        match_char('d').take_n(2).parse(&input)
     );
 }
 

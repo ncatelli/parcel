@@ -10,7 +10,6 @@ pub mod prelude;
 mod tests;
 
 use std::borrow::Borrow;
-use std::ops::Index;
 
 /// MatchStatus represents a non-error parser result with two cases, signifying
 /// where the parse returned a match or not.
@@ -61,6 +60,15 @@ pub trait Parser<'a, Input, Output> {
         Output: 'a,
     {
         BoxedParser::new(take_until_n(self, n))
+    }
+
+    fn take_n(self, n: usize) -> BoxedParser<'a, Input, Vec<Output>>
+    where
+        Self: Sized + 'a,
+        Input: Copy + 'a,
+        Output: 'a,
+    {
+        BoxedParser::new(take_n(self, n))
     }
 
     fn predicate<F>(self, predicate_case: F) -> BoxedParser<'a, Input, Output>
@@ -277,15 +285,17 @@ where
 /// TODO: This is just a copy of take_until_n right now
 pub fn take_n<'a, P, A, B>(parser: P, n: usize) -> impl Parser<'a, A, Vec<B>>
 where
-    A: Copy + Index<usize> + 'a,
+    A: Copy + 'a,
     P: Parser<'a, A, B>,
 {
-    move |mut input| {
+    move |input| {
+        let mut ni: A = input;
         let mut res_cnt = 0;
         let mut result_acc: Vec<B> = Vec::new();
-        while let Ok(MatchStatus::Match((next_input, result))) = parser.parse(input) {
+
+        while let Ok(MatchStatus::Match((next_input, result))) = parser.parse(ni) {
             if res_cnt < n {
-                input = next_input;
+                ni = next_input;
                 result_acc.push(result);
                 res_cnt += 1;
             } else {
@@ -293,8 +303,8 @@ where
             }
         }
 
-        if res_cnt > 0 {
-            Ok(MatchStatus::Match((input, result_acc)))
+        if res_cnt == n {
+            Ok(MatchStatus::Match((ni, result_acc)))
         } else {
             Ok(MatchStatus::NoMatch(input))
         }
