@@ -26,7 +26,7 @@
 	// "postCreateCommand": "rustc --version"
 	// Add the IDs of extensions you want installed when the container is created in the array below.
 	"extensions": [
-		"rust-lang.rust",
+		"matklad.rust-analyzer",
 		"bungcip.better-toml",
 		"vadimcn.vscode-lldb",
 		"alanwalk.markdown-toc"
