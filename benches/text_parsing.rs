@@ -1,20 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 extern crate parcel;
+use parcel::parsers::character::{any_char, match_char};
 use parcel::Parser;
-
-fn match_char<'a>(expected: char) -> impl parcel::Parser<'a, &'a [char], char> {
-    move |input: &'a [char]| match input.get(0) {
-        Some(&next) if next == expected => Ok(parcel::MatchStatus::Match((&input[1..], next))),
-        _ => Ok(parcel::MatchStatus::NoMatch(input)),
-    }
-}
-
-fn any_char<'a>() -> impl parcel::Parser<'a, &'a [char], char> {
-    move |input: &'a [char]| match input.get(0) {
-        Some(&next) => Ok(parcel::MatchStatus::Match((&input[1..], next))),
-        _ => Ok(parcel::MatchStatus::NoMatch(input)),
-    }
-}
 
 fn parse_map(c: &mut Criterion) {
     let mut group = c.benchmark_group("map combinator");

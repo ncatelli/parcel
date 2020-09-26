@@ -1,20 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 extern crate parcel;
+use parcel::parsers::byte::{any_byte, match_byte};
 use parcel::Parser;
-
-fn match_byte<'a>(expected: u8) -> impl parcel::Parser<'a, &'a [u8], u8> {
-    move |input: &'a [u8]| match input.get(0) {
-        Some(&next) if next == expected => Ok(parcel::MatchStatus::Match((&input[1..], next))),
-        _ => Ok(parcel::MatchStatus::NoMatch(input)),
-    }
-}
-
-fn any_byte<'a>() -> impl parcel::Parser<'a, &'a [u8], u8> {
-    move |input: &'a [u8]| match input.get(0) {
-        Some(&next) => Ok(parcel::MatchStatus::Match((&input[1..], next))),
-        _ => Ok(parcel::MatchStatus::NoMatch(input)),
-    }
-}
 
 fn parse_map(c: &mut Criterion) {
     let mut group = c.benchmark_group("map combinator");

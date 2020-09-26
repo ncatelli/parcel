@@ -4,6 +4,7 @@
 //! recommend against using it for anything other than experimentation.
 //! Instead, recommending Geal/nom.
 
+pub mod parsers;
 pub mod prelude;
 
 #[cfg(test)]
@@ -249,6 +250,28 @@ where
 /// Provides a convenient shortcut for the or combinator. allowing the passing
 /// of an array of matching parsers, returning the result of the first matching
 /// parser or a NoMatch if none match.
+///
+/// Types passed to `one_of` are expected to be of the same concrete type. For
+/// cases where opaque or recursive types are used please the `or` combinator
+/// should be used as this captures the `Parser<A, B> -> Parser<A, C>`
+/// transition.
+///
+/// Arguments passed to `one_of` are eagerly evaluated; if you are passing
+/// the result of a function call, it is recommended to use [`or`],
+/// which is lazily evaluated.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::match_char;
+/// let input = vec!['a', 'b', 'c'];
+/// let parsers = vec![match_char('b'), match_char('c'), match_char('a')];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+///   parcel::one_of(parsers).parse(&input)
+/// );
+/// ```
 pub fn one_of<'a, P, A, B>(parsers: Vec<P>) -> impl Parser<'a, A, B>
 where
     A: Copy + 'a + Borrow<A>,
