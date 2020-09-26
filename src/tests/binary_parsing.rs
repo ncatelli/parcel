@@ -1,22 +1,9 @@
+use crate::parsers::byte::{any_byte, match_byte};
 use crate::prelude::v1::*;
 use crate::{
     join, left, one_or_more, optional, predicate, right, take_n, take_until_n, zero_or_more,
     MatchStatus,
 };
-
-fn match_byte<'a>(expected: u8) -> impl Parser<'a, &'a [u8], u8> {
-    move |input: &'a [u8]| match input.get(0) {
-        Some(&next) if next == expected => Ok(MatchStatus::Match((&input[1..], next))),
-        _ => Ok(MatchStatus::NoMatch(input)),
-    }
-}
-
-fn any_byte<'a>() -> impl Parser<'a, &'a [u8], u8> {
-    move |input: &'a [u8]| match input.get(0) {
-        Some(&next) => Ok(MatchStatus::Match((&input[1..], next))),
-        _ => Ok(MatchStatus::NoMatch(input)),
-    }
-}
 
 #[test]
 fn parser_should_parse_byte_match() {

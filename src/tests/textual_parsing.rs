@@ -1,22 +1,9 @@
+use crate::parsers::character::{any_char, match_char};
 use crate::prelude::v1::*;
 use crate::{
     join, left, one_or_more, optional, predicate, right, take_n, take_until_n, zero_or_more,
     MatchStatus,
 };
-
-fn match_char<'a>(expected: char) -> impl Parser<'a, &'a [char], char> {
-    move |input: &'a [char]| match input.get(0) {
-        Some(&next) if next == expected => Ok(MatchStatus::Match((&input[1..], next))),
-        _ => Ok(MatchStatus::NoMatch(input)),
-    }
-}
-
-fn any_char<'a>() -> impl Parser<'a, &'a [char], char> {
-    move |input: &'a [char]| match input.get(0) {
-        Some(&next) => Ok(MatchStatus::Match((&input[1..], next))),
-        _ => Ok(MatchStatus::NoMatch(input)),
-    }
-}
 
 #[test]
 fn parser_should_parse_char_match() {
