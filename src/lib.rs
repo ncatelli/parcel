@@ -19,6 +19,73 @@ pub enum MatchStatus<U, T> {
     NoMatch(U),
 }
 
+impl<U, T> MatchStatus<U, T> {
+    /// Returns the contained `Match` value, consuming the `self` value.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value equals `NoMatch`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let input = vec!['a'];
+    /// let v = parcel::MatchStatus::Match((&input[1..], 'a'));
+    /// assert_eq!(v.unwrap(), 'a');
+    /// ```
+    ///
+    /// ```{.should_panic}
+    /// let input = vec!['a'];
+    /// let v = parcel::MatchStatus::<&[char], char>::NoMatch(&input);
+    /// assert_eq!(v.unwrap(), 'a');
+    /// ```
+    pub fn unwrap(self) -> T {
+        match self {
+            Self::Match((_, t)) => t,
+            _ => panic!("unable "),
+        }
+    }
+
+    /// Returns the contained `Match` value, consuming the `self` value.
+    ///
+    /// Arguments passed to `unwrap_or` are eagerly evaluated; if you are passing
+    /// the result of a function call, it is recommended to use [`unwrap_or_else`],
+    /// which is lazily evaluated.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let input = vec!['a'];
+    /// let v = parcel::MatchStatus::NoMatch(&input);
+    /// assert_eq!(v.unwrap_or('b'), 'b');
+    /// ```
+    pub fn unwrap_or(self, default: T) -> T {
+        match self {
+            Self::Match((_, t)) => t,
+            _ => default,
+        }
+    }
+
+    /// Returns the contained `Match` value or computes it from a closure.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let input = vec!['a'];
+    /// let v = parcel::MatchStatus::NoMatch(&input);
+    /// assert_eq!(v.unwrap_or_else(|| 'b'), 'b');
+    /// ```
+    pub fn unwrap_or_else<F>(self, f: F) -> T
+    where
+        F: FnOnce() -> T,
+    {
+        match self {
+            Self::Match((_, t)) => t,
+            _ => f(),
+        }
+    }
+}
+
 /// Represents the state of parser execution, wrapping the above MatchStatus
 /// and providing an Error string for any problems.
 pub type ParseResult<'a, Input, Output> = Result<MatchStatus<Input, Output>, String>;
