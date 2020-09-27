@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 extern crate parcel;
-use parcel::parsers::character::{any_char, match_char};
+use parcel::parsers::character::{any_character, expect_character};
 use parcel::Parser;
 
 fn parse_map(c: &mut Criterion) {
@@ -9,13 +9,14 @@ fn parse_map(c: &mut Criterion) {
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::map(match_char('a'), |result| result).parse(black_box(&seed_vec));
+            let _expr =
+                parcel::map(expect_character('a'), |result| result).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = match_char('a')
+            let _expr = expect_character('a')
                 .map(|result| result)
                 .parse(black_box(&seed_vec));
         });
@@ -28,13 +29,13 @@ fn parse_skip(c: &mut Criterion) {
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::skip(match_char('a')).parse(black_box(&seed_vec));
+            let _expr = parcel::skip(expect_character('a')).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = match_char('a').skip().parse(black_box(&seed_vec));
+            let _expr = expect_character('a').skip().parse(black_box(&seed_vec));
         });
     });
 }
@@ -45,14 +46,15 @@ fn parse_or(c: &mut Criterion) {
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::or(match_char('c'), || match_char('a')).parse(black_box(&seed_vec));
+            let _expr = parcel::or(expect_character('c'), || expect_character('a'))
+                .parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = match_char('c')
-                .or(|| match_char('a'))
+            let _expr = expect_character('c')
+                .or(|| expect_character('a'))
                 .parse(black_box(&seed_vec));
         });
     });
@@ -65,8 +67,12 @@ fn parse_one_of(c: &mut Criterion) {
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::one_of(vec![match_char('c'), match_char('b'), match_char('a')])
-                .parse(black_box(&seed_vec));
+            let _expr = parcel::one_of(vec![
+                expect_character('c'),
+                expect_character('b'),
+                expect_character('a'),
+            ])
+            .parse(black_box(&seed_vec));
         });
     });
     group.finish();
@@ -78,15 +84,15 @@ fn parse_and_then(c: &mut Criterion) {
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr =
-                parcel::and_then(match_char('a'), |_| match_char('b')).parse(black_box(&seed_vec));
+            let _expr = parcel::and_then(expect_character('a'), |_| expect_character('b'))
+                .parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = match_char('a')
-                .and_then(|_| match_char('b'))
+            let _expr = expect_character('a')
+                .and_then(|_| expect_character('b'))
                 .parse(black_box(&seed_vec));
         });
     });
@@ -99,13 +105,15 @@ fn parse_take_until_n(c: &mut Criterion) {
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::take_until_n(match_char('a'), 4).parse(black_box(&seed_vec));
+            let _expr = parcel::take_until_n(expect_character('a'), 4).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = match_char('a').take_until_n(4).parse(black_box(&seed_vec));
+            let _expr = expect_character('a')
+                .take_until_n(4)
+                .parse(black_box(&seed_vec));
         });
     });
     group.finish();
@@ -117,13 +125,13 @@ fn parse_take_n(c: &mut Criterion) {
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::take_n(match_char('a'), 4).parse(black_box(&seed_vec));
+            let _expr = parcel::take_n(expect_character('a'), 4).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = match_char('a').take_n(4).parse(black_box(&seed_vec));
+            let _expr = expect_character('a').take_n(4).parse(black_box(&seed_vec));
         });
     });
     group.finish();
@@ -135,13 +143,14 @@ fn parse_predicate(c: &mut Criterion) {
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::predicate(any_char(), |&c| c != 'b').parse(black_box(&seed_vec));
+            let _expr =
+                parcel::predicate(any_character(), |&c| c != 'b').parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = any_char()
+            let _expr = any_character()
                 .predicate(|&c| c != 'b')
                 .parse(black_box(&seed_vec));
         });
@@ -155,13 +164,15 @@ fn parse_zero_or_more(c: &mut Criterion) {
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::zero_or_more(match_char('a')).parse(black_box(&seed_vec));
+            let _expr = parcel::zero_or_more(expect_character('a')).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = match_char('a').zero_or_more().parse(black_box(&seed_vec));
+            let _expr = expect_character('a')
+                .zero_or_more()
+                .parse(black_box(&seed_vec));
         });
     });
     group.finish();
@@ -173,13 +184,15 @@ fn parse_one_or_more(c: &mut Criterion) {
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::one_or_more(match_char('a')).parse(black_box(&seed_vec));
+            let _expr = parcel::one_or_more(expect_character('a')).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = match_char('a').one_or_more().parse(black_box(&seed_vec));
+            let _expr = expect_character('a')
+                .one_or_more()
+                .parse(black_box(&seed_vec));
         });
     });
     group.finish()
@@ -191,13 +204,13 @@ fn parse_optional(c: &mut Criterion) {
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::optional(match_char('a')).parse(black_box(&seed_vec));
+            let _expr = parcel::optional(expect_character('a')).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = match_char('a').optional().parse(black_box(&seed_vec));
+            let _expr = expect_character('a').optional().parse(black_box(&seed_vec));
         });
     });
     group.finish()
@@ -209,20 +222,21 @@ fn parse_applicatives(c: &mut Criterion) {
 
     group.bench_function("join combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::join(match_char('a'), match_char('b')).parse(black_box(&seed_vec));
+            let _expr = parcel::join(expect_character('a'), expect_character('b'))
+                .parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("left combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::left(parcel::join(match_char('a'), match_char('b')))
+            let _expr = parcel::left(parcel::join(expect_character('a'), expect_character('b')))
                 .parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("right combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::right(parcel::join(match_char('a'), match_char('b')))
+            let _expr = parcel::right(parcel::join(expect_character('a'), expect_character('b')))
                 .parse(black_box(&seed_vec));
         });
     });
