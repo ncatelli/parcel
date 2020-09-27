@@ -51,6 +51,31 @@ pub fn expect_character<'a>(expected: char) -> impl Parser<'a, &'a [char], char>
     }
 }
 
+/// Matches any single character regardless of value. Returning a `Match`
+/// result containing the next character in the stream if there is one
+/// available to consume.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::any_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+///   any_character().parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::any_character;
+/// let input = vec![];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   any_character().parse(&input[0..])
+/// );
+/// ```
 pub fn any_character<'a>() -> impl Parser<'a, &'a [char], char> {
     move |input: &'a [char]| match input.get(0) {
         Some(&next) => Ok(MatchStatus::Match((&input[1..], next))),
