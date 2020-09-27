@@ -264,9 +264,9 @@ where
 ///
 /// ```
 /// use parcel::prelude::v1::*;
-/// use parcel::parsers::character::match_char;
+/// use parcel::parsers::character::expect_character;
 /// let input = vec!['a', 'b', 'c'];
-/// let parsers = vec![match_char('b'), match_char('c'), match_char('a')];
+/// let parsers = vec![expect_character('b'), expect_character('c'), expect_character('a')];
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
 ///   parcel::one_of(parsers).parse(&input)
