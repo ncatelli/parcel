@@ -99,6 +99,25 @@ pub type ParseResult<'a, Input, Output> = Result<MatchStatus<Input, Output>, Str
 pub trait Parser<'a, Input, Output> {
     fn parse(&self, input: Input) -> ParseResult<'a, Input, Output>;
 
+    /// Provides a short-circuiting or combinator taking a parser (P), provided
+    /// via a closure thunk to prevent infinitely recursing.
+    ///
+    /// The parser passed to `or` is lazily evaluated, Only if the first case
+    /// fails. This functions as a way to work around instances of Opaque types
+    /// that could lead to type issues when using an alternative, yet similar
+    /// parser like `one_of`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+    ///   expect_character('b').or(|| expect_character('a')).parse(&input)
+    /// );
+    /// ```
     fn or<P>(self, thunk: impl Fn() -> P + 'a) -> BoxedParser<'a, Input, Output>
     where
         Self: Sized + 'a,
@@ -207,7 +226,8 @@ where
     }
 }
 
-// Provides a boxed wrapper to any parser trait implementation.
+/// Provides a boxed wrapper to any parser trait implementation. More or less,
+/// this maps a `Parser<Input, Output>` -> `Box<dyn Parser<Input, Output>>`.
 pub struct BoxedParser<'a, Input, Output> {
     parser: Box<dyn Parser<'a, Input, Output> + 'a>,
 }
@@ -647,7 +667,7 @@ where
     }
 }
 
-/// Provides optional matching of a value, returning `P<A> -> Option<B>`.
+/// Provides optional matching of a value, returning `Parser<A, Option<B>>`.
 /// For cases where the value is not present, a match with a `None` value is
 /// returned. Otherwise a match with a `Some<B>` is returned.
 ///
@@ -688,8 +708,20 @@ where
 
 // Applicatives
 
-/// Join attempts to match Parser<A, B> and Parser<A, C> after which it merges
-/// the results to Parser<A, (B, C)>.
+/// Join attempts to match `Parser<A, B>` and `Parser<A, C>` after which it merges
+/// the results to `Parser<A, (B, C)>`.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], ('a', 'b')))),
+///   parcel::join(expect_character('a'), expect_character('b')).parse(&input)
+/// );
+/// ```
 pub fn join<'a, P1, P2, A, B, C>(parser1: P1, parser2: P2) -> impl Parser<'a, A, (B, C)>
 where
     A: Copy + Borrow<A> + 'a,
@@ -714,7 +746,24 @@ where
 }
 
 /// Left expects to take the results of join, returning a Parser<A, (B, C)>
-/// and then extrapolates the value left-hand value, returning a Parser<A, B>.
+/// and then extrapolates the left-hand value, returning a Parser<A, B>.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], 'a'))),
+///   parcel::left(
+///       parcel::join(
+///           expect_character('a'),
+///           expect_character('b')
+///       )
+///   ).parse(&input)
+/// );
+/// ```
 pub fn left<'a, P, A, B, C>(parser: P) -> impl Parser<'a, A, B>
 where
     A: Copy + Borrow<A> + 'a,
@@ -727,6 +776,23 @@ where
 
 /// Right expects to take the results of join, returning a Parser<A, (B, C)>
 /// and then extrapolates the value right-hand value, returning a Parser<A, C>.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], 'b'))),
+///   parcel::right(
+///       parcel::join(
+///           expect_character('a'),
+///           expect_character('b')
+///       )
+///   ).parse(&input)
+/// );
+/// ```
 pub fn right<'a, P, A, B, C>(parser: P) -> impl Parser<'a, A, C>
 where
     A: Copy + Borrow<A> + 'a,
