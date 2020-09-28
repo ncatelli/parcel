@@ -13,7 +13,7 @@ mod tests;
 use std::borrow::Borrow;
 
 /// MatchStatus represents a non-error parser result with two cases, signifying
-/// where the parse returned a match or not.
+/// whether the parse returned a match or not.
 #[derive(Debug, PartialEq, Clone)]
 pub enum MatchStatus<U, T> {
     Match((U, T)),
