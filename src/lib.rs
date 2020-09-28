@@ -128,6 +128,34 @@ pub trait Parser<'a, Input, Output> {
         BoxedParser::new(or(self, thunk))
     }
 
+    /// Returns a match if Parser<A, B> matches and then Parser<A, C> matches,
+    /// returning the results of the second parser.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], 'b'))),
+    ///   expect_character('a')
+    ///       .and_then(|_| expect_character('b')).parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], "ab".to_string()))),
+    ///   expect_character('a').and_then(
+    ///       |first_match| expect_character('b').map(move |second_match| {
+    ///          format!("{}{}", first_match, second_match)
+    ///       })).parse(&input)
+    /// );
+    /// ```
     fn and_then<F, NextParser, NewOutput>(self, thunk: F) -> BoxedParser<'a, Input, NewOutput>
     where
         Self: Sized + 'a,
