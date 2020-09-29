@@ -13,7 +13,7 @@ mod tests;
 use std::borrow::Borrow;
 
 /// MatchStatus represents a non-error parser result with two cases, signifying
-/// where the parse returned a match or not.
+/// whether the parse returned a match or not.
 #[derive(Debug, PartialEq, Clone)]
 pub enum MatchStatus<U, T> {
     Match((U, T)),
@@ -99,6 +99,25 @@ pub type ParseResult<'a, Input, Output> = Result<MatchStatus<Input, Output>, Str
 pub trait Parser<'a, Input, Output> {
     fn parse(&self, input: Input) -> ParseResult<'a, Input, Output>;
 
+    /// Provides a short-circuiting or combinator taking a parser (P), provided
+    /// via a closure thunk to prevent infinitely recursing.
+    ///
+    /// The parser passed to `or` is lazily evaluated, Only if the first case
+    /// fails. This functions as a way to work around instances of Opaque types
+    /// that could lead to type issues when using an alternative, yet similar
+    /// parser like `one_of`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+    ///   expect_character('b').or(|| expect_character('a')).parse(&input)
+    /// );
+    /// ```
     fn or<P>(self, thunk: impl Fn() -> P + 'a) -> BoxedParser<'a, Input, Output>
     where
         Self: Sized + 'a,
@@ -109,6 +128,34 @@ pub trait Parser<'a, Input, Output> {
         BoxedParser::new(or(self, thunk))
     }
 
+    /// Returns a match if Parser<A, B> matches and then Parser<A, C> matches,
+    /// returning the results of the second parser.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], 'b'))),
+    ///   expect_character('a')
+    ///       .and_then(|_| expect_character('b')).parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], "ab".to_string()))),
+    ///   expect_character('a').and_then(
+    ///       |first_match| expect_character('b').map(move |second_match| {
+    ///          format!("{}{}", first_match, second_match)
+    ///       })).parse(&input)
+    /// );
+    /// ```
     fn and_then<F, NextParser, NewOutput>(self, thunk: F) -> BoxedParser<'a, Input, NewOutput>
     where
         Self: Sized + 'a,
@@ -121,6 +168,31 @@ pub trait Parser<'a, Input, Output> {
         BoxedParser::new(and_then(self, thunk))
     }
 
+    /// Attempts to consume until n matches have occured. A match is returned
+    /// if 1 < result count <= n. Functionally this behaves like a bounded
+    /// version of the `one_or_more` parser.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'a', 'a'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+    ///   expect_character('a').take_until_n(2).parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[1..], vec!['a']))),
+    ///   expect_character('a').take_until_n(2).parse(&input)
+    /// );
+    /// ```
     fn take_until_n(self, n: usize) -> BoxedParser<'a, Input, Vec<Output>>
     where
         Self: Sized + 'a,
@@ -130,6 +202,32 @@ pub trait Parser<'a, Input, Output> {
         BoxedParser::new(take_until_n(self, n))
     }
 
+    /// `take_n` must match exactly n sequential matches of parser: `P`
+    /// otherwise `NoMatch` is returned. On a match, a `Vec` of the results is
+    /// returned. Functionally this behaves like the `take_until_n` parser with
+    /// a single expected match count.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'a', 'a'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+    ///   expect_character('a').take_n(2).parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+    ///   expect_character('a').take_n(2).parse(&input)
+    /// );
+    /// ```
     fn take_n(self, n: usize) -> BoxedParser<'a, Input, Vec<Output>>
     where
         Self: Sized + 'a,
@@ -139,6 +237,34 @@ pub trait Parser<'a, Input, Output> {
         BoxedParser::new(take_n(self, n))
     }
 
+    /// Functions much like a peek combinator in that it takes a closure that
+    /// accepts `&B`. The parser will only return a match if `F
+    /// asserts a match. This is useful for cases of `one_or_more` or
+    /// `zero_or_more` where a match must terminate.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::any_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+    ///   any_character().predicate(|&c| c != 'c').parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::any_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'b']))),
+    ///   parcel::one_or_more(
+    ///       any_character().predicate(|&c| c != 'c')
+    ///   ).parse(&input)
+    /// );
+    /// ```
     fn predicate<F>(self, predicate_case: F) -> BoxedParser<'a, Input, Output>
     where
         Self: Sized + 'a,
@@ -149,6 +275,30 @@ pub trait Parser<'a, Input, Output> {
         BoxedParser::new(predicate(self, predicate_case))
     }
 
+    /// Functions much like an optional parser, consuming between zero and n
+    /// values that match the specified parser `P`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'a', 'b'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+    ///   expect_character('a').zero_or_more().parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[0..], vec![]))),
+    ///   expect_character('c').zero_or_more().parse(&input)
+    /// );
+    /// ```
     fn zero_or_more(self) -> BoxedParser<'a, Input, Vec<Output>>
     where
         Self: Sized + 'a,
@@ -158,6 +308,30 @@ pub trait Parser<'a, Input, Output> {
         BoxedParser::new(zero_or_more(self))
     }
 
+    /// Consumes values from the input while the parser continues to return a
+    /// MatchStatus::Match.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'a', 'b'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+    ///   expect_character('a').one_or_more().parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+    ///   expect_character('c').one_or_more().parse(&input)
+    /// );
+    /// ```
     fn one_or_more(self) -> BoxedParser<'a, Input, Vec<Output>>
     where
         Self: Sized + 'a,
@@ -167,6 +341,22 @@ pub trait Parser<'a, Input, Output> {
         BoxedParser::new(one_or_more(self))
     }
 
+    /// Map transforms a `Parser<A, B>` to `Parser<A, C>` via a closure,
+    /// map_fn, allowing transformation of the result `B -> C`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[1..], "the value: a".to_string()))),
+    ///   expect_character('a').map(
+    ///       |res| format!("the value: {}", res)
+    ///   ).parse(&input)
+    /// );
+    /// ```
     fn map<F, NewOutput>(self, map_fn: F) -> BoxedParser<'a, Input, NewOutput>
     where
         Self: Sized + 'a,
@@ -178,6 +368,21 @@ pub trait Parser<'a, Input, Output> {
         BoxedParser::new(map(self, map_fn))
     }
 
+    /// Attempts to match preceeding parser `P`, skipping the input if it
+    /// matches. For cases where `P` doesn't match the previous input is
+    /// returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::NoMatch(&input[1..])),
+    ///   expect_character('a').skip().parse(&input)
+    /// );
+    /// ```
     fn skip(self) -> BoxedParser<'a, Input, Output>
     where
         Self: Sized + 'a,
@@ -187,6 +392,31 @@ pub trait Parser<'a, Input, Output> {
         BoxedParser::new(skip(self))
     }
 
+    /// Provides optional matching of a value, returning `Parser<A, Option<B>>`.
+    /// For cases where the value is not present, a match with a `None` value is
+    /// returned. Otherwise a match with a `Some<B>` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[1..], Some('a')))),
+    ///   expect_character('a').optional().parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[0..], None))),
+    ///   parcel::optional(expect_character('c')).parse(&input)
+    /// );
+    /// ```
     fn optional(self) -> BoxedParser<'a, Input, Option<Output>>
     where
         Self: Sized + 'a,
@@ -207,7 +437,8 @@ where
     }
 }
 
-// Provides a boxed wrapper to any parser trait implementation.
+/// Provides a boxed wrapper to any parser trait implementation. More or less,
+/// this maps a `Parser<Input, Output>` -> `Box<dyn Parser<Input, Output>>`.
 pub struct BoxedParser<'a, Input, Output> {
     parser: Box<dyn Parser<'a, Input, Output> + 'a>,
 }
@@ -232,6 +463,23 @@ impl<'a, Input, Output> Parser<'a, Input, Output> for BoxedParser<'a, Input, Out
 /// Provides a short-circuiting or combinator taking a parser (P1) as an
 /// argument and a second parser (P2), provided via a closure thunk to prevent
 /// infinitely recursing.
+///
+/// The second parser passed to `or` is lazily evaluated, Only if the first case
+/// fails. This functions as a way to work around instances of Opaque types that
+/// that could lead to type issues when using an alternative, yet similar parser
+/// like `one_of`.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+///   parcel::or(expect_character('b'), || expect_character('a')).parse(&input)
+/// );
+/// ```
 pub fn or<'a, P1, P2, A, B>(parser1: P1, thunk_to_parser: impl Fn() -> P2) -> impl Parser<'a, A, B>
 where
     A: Copy + 'a + Borrow<A>,
@@ -292,8 +540,23 @@ where
     }
 }
 
-/// Map a Parser<A, B> to Parser<A, C> via a closure, map_fn, allowing
-/// transformation of the result B -> C.
+/// Map transforms a `Parser<A, B>` to `Parser<A, C>` via a closure, map_fn,
+/// allowing transformation of the result `B -> C`.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[1..], "the value: a".to_string()))),
+///   parcel::map(
+///       expect_character('a'),
+///       |res| format!("the value: {}", res)
+///   ).parse(&input)
+/// );
+/// ```
 pub fn map<'a, P, F, A: 'a, B, C>(parser: P, map_fn: F) -> impl Parser<'a, A, C>
 where
     P: Parser<'a, A, B>,
@@ -309,8 +572,20 @@ where
     }
 }
 
-/// Attempts to match a parser, P, skipping the input if it matches. For cases
-/// P doesn't match the previous input is returned.
+/// Attempts to match a parser, `P`, skipping the input if it matches. For cases
+/// `P` doesn't match the previous input is returned.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[1..])),
+///   parcel::skip(expect_character('a')).parse(&input)
+/// );
+/// ```
 pub fn skip<'a, P, A, B>(parser: P) -> impl Parser<'a, A, B>
 where
     A: 'a,
@@ -325,6 +600,35 @@ where
 
 /// Returns a match if Parser<A, B> matches and then Parser<A, C> matches,
 /// returning the results of the second parser.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], 'b'))),
+///   parcel::and_then(
+///       expect_character('a'),
+///       |_| expect_character('b'),
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], "ab".to_string()))),
+///   parcel::and_then(
+///       expect_character('a'),
+///       |first_match| expect_character('b').map(move |second_match| {
+///          format!("{}{}", first_match, second_match)
+///       })).parse(&input)
+/// );
+/// ```
 pub fn and_then<'a, P1, F, P2, A, B, C>(parser: P1, f: F) -> impl Parser<'a, A, C>
 where
     A: 'a,
@@ -341,8 +645,31 @@ where
     }
 }
 
-/// Much like the one_or_more parser, this attempts to consume until n matches
-/// have occured. A match is returned if 1 < result count <= n.
+/// This attempts to consume until n matches have occured. A match is returned
+/// if 1 < result count <= n. Functionally this behaves like a bounded version
+/// of the `one_or_more` parser.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'a', 'a'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+///   parcel::take_until_n(expect_character('a'), 2).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[1..], vec!['a']))),
+///   parcel::take_until_n(expect_character('a'), 2).parse(&input)
+/// );
+/// ```
 pub fn take_until_n<'a, P, A, B>(parser: P, n: usize) -> impl Parser<'a, A, Vec<B>>
 where
     A: Copy + 'a,
@@ -369,8 +696,32 @@ where
     }
 }
 
-/// take_n must match exactly n sequential matches of parser: P otherwise
-/// NoMatch is returned. On a match, a Vec of the results is returned.
+/// `take_n` must match exactly n sequential matches of parser: `P` otherwise
+/// `NoMatch` is returned. On a match, a `Vec` of the results is returned.
+/// Functionally this behaves like the `take_until_n` parser with a single
+/// expected match count.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'a', 'a'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+///   parcel::take_n(expect_character('a'), 2).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   parcel::take_n(expect_character('a'), 2).parse(&input)
+/// );
+/// ```
 pub fn take_n<'a, P, A, B>(parser: P, n: usize) -> impl Parser<'a, A, Vec<B>>
 where
     A: Copy + 'a,
@@ -399,10 +750,34 @@ where
     }
 }
 
-/// Functions much like a peek combinator in that it takes a parser (P<A, B>)
-/// and a closure that accepts &B. The Parser will only return a match if F
-/// asserts a match. This is useful for cases of one_or_more or zero_or_more
-/// where a match must terminate.
+/// Functions much like a peek combinator in that it takes a parser `P<A, B>`
+/// and a closure that accepts `&B`. The parser will only return a match if `F
+/// asserts a match. This is useful for cases of `one_or_more` or
+/// `zero_or_more` where a match must terminate.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::any_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+///   parcel::predicate(any_character(), |&c| c != 'c').parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::any_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'b']))),
+///   parcel::one_or_more(
+///       parcel::predicate(any_character(), |&c| c != 'c')
+///   ).parse(&input)
+/// );
+/// ```
 pub fn predicate<'a, P, A, B, F>(parser: P, pred_case: F) -> impl Parser<'a, A, B>
 where
     A: Copy + 'a,
@@ -420,7 +795,29 @@ where
 }
 
 /// Functions much like an optional parser, consuming between zero and n values
-/// that match the specified parser P.
+/// that match the specified parser `P`.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'a', 'b'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+///   parcel::zero_or_more(expect_character('a')).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[0..], vec![]))),
+///   parcel::zero_or_more(expect_character('c')).parse(&input)
+/// );
+/// ```
 pub fn zero_or_more<'a, P, A, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
 where
     A: Copy + 'a,
@@ -439,6 +836,28 @@ where
 
 /// Consumes values from the input while the parser continues to return a
 /// MatchStatus::Match.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'a', 'b'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+///   parcel::one_or_more(expect_character('a')).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   parcel::one_or_more(expect_character('c')).parse(&input)
+/// );
+/// ```
 pub fn one_or_more<'a, P, A, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
 where
     A: Copy + 'a,
@@ -459,7 +878,31 @@ where
     }
 }
 
-/// Matches zero or one
+/// Provides optional matching of a value, returning `Parser<A, Option<B>>`.
+/// For cases where the value is not present, a match with a `None` value is
+/// returned. Otherwise a match with a `Some<B>` is returned.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[1..], Some('a')))),
+///   parcel::optional(expect_character('a')).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[0..], None))),
+///   parcel::optional(expect_character('c')).parse(&input)
+/// );
+/// ```
 pub fn optional<'a, P, A, B>(parser: P) -> impl Parser<'a, A, Option<B>>
 where
     A: Copy + 'a,
@@ -476,8 +919,20 @@ where
 
 // Applicatives
 
-/// Join attempts to match Parser<A, B> and Parser<A, C> after which it merges
-/// the results to Parser<A, (B, C)>.
+/// Join attempts to match `Parser<A, B>` and `Parser<A, C>` after which it merges
+/// the results to `Parser<A, (B, C)>`.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], ('a', 'b')))),
+///   parcel::join(expect_character('a'), expect_character('b')).parse(&input)
+/// );
+/// ```
 pub fn join<'a, P1, P2, A, B, C>(parser1: P1, parser2: P2) -> impl Parser<'a, A, (B, C)>
 where
     A: Copy + Borrow<A> + 'a,
@@ -502,7 +957,24 @@ where
 }
 
 /// Left expects to take the results of join, returning a Parser<A, (B, C)>
-/// and then extrapolates the value left-hand value, returning a Parser<A, B>.
+/// and then extrapolates the left-hand value, returning a Parser<A, B>.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], 'a'))),
+///   parcel::left(
+///       parcel::join(
+///           expect_character('a'),
+///           expect_character('b')
+///       )
+///   ).parse(&input)
+/// );
+/// ```
 pub fn left<'a, P, A, B, C>(parser: P) -> impl Parser<'a, A, B>
 where
     A: Copy + Borrow<A> + 'a,
@@ -515,6 +987,23 @@ where
 
 /// Right expects to take the results of join, returning a Parser<A, (B, C)>
 /// and then extrapolates the value right-hand value, returning a Parser<A, C>.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], 'b'))),
+///   parcel::right(
+///       parcel::join(
+///           expect_character('a'),
+///           expect_character('b')
+///       )
+///   ).parse(&input)
+/// );
+/// ```
 pub fn right<'a, P, A, B, C>(parser: P) -> impl Parser<'a, A, C>
 where
     A: Copy + Borrow<A> + 'a,

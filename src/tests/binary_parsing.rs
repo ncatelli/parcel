@@ -1,4 +1,4 @@
-use crate::parsers::byte::{any_byte, match_byte};
+use crate::parsers::byte::{any_byte, expect_byte};
 use crate::prelude::v1::*;
 use crate::{
     join, left, one_or_more, optional, predicate, right, take_n, take_until_n, zero_or_more,
@@ -11,7 +11,7 @@ fn parser_should_parse_byte_match() {
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[1..], 0x00))),
-        match_byte(0x00).parse(&input)
+        expect_byte(0x00).parse(&input)
     );
 }
 
@@ -21,7 +21,7 @@ fn parser_can_map_a_result() {
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[1..], 0x00))),
-        match_byte(0x00).map(|result| result).parse(&input)
+        expect_byte(0x00).map(|result| result).parse(&input)
     );
 }
 
@@ -31,7 +31,7 @@ fn parser_should_skip_a_result() {
 
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[1..])),
-        match_byte(0x00).skip().parse(&input)
+        expect_byte(0x00).skip().parse(&input)
     );
 }
 
@@ -41,7 +41,7 @@ fn parser_should_not_skip_input_if_parser_does_not_match() {
 
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
-        match_byte(0xFF).skip().parse(&input)
+        expect_byte(0xFF).skip().parse(&input)
     );
 }
 
@@ -51,14 +51,14 @@ fn parser_can_match_with_or() {
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[1..], 0x00))),
-        match_byte(0x03).or(|| match_byte(0x00)).parse(&input)
+        expect_byte(0x03).or(|| expect_byte(0x00)).parse(&input)
     );
 }
 
 #[test]
 fn parser_can_match_with_one_of() {
     let input = vec![0x00, 0x01, 0x02];
-    let parsers = vec![match_byte(0x01), match_byte(0x02), match_byte(0x00)];
+    let parsers = vec![expect_byte(0x01), expect_byte(0x02), expect_byte(0x00)];
     assert_eq!(
         Ok(MatchStatus::Match((&input[1..], 0x00))),
         crate::one_of(parsers).parse(&input)
@@ -71,8 +71,8 @@ fn parser_can_match_with_and_then() {
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[2..], 0x01))),
-        match_byte(0x00)
-            .and_then(|_| match_byte(0x01))
+        expect_byte(0x00)
+            .and_then(|_| expect_byte(0x01))
             .parse(&input)
     );
 }
@@ -86,7 +86,7 @@ fn parser_can_match_with_take_until_n() {
             &input[4..],
             vec![0x00, 0x00, 0x00, 0x00]
         ))),
-        take_until_n(match_byte(0x00), 4).parse(&input)
+        take_until_n(expect_byte(0x00), 4).parse(&input)
     );
 }
 
@@ -99,7 +99,7 @@ fn parser_can_match_with_boxed_take_until_n() {
             &input[4..],
             vec![0x00, 0x00, 0x00, 0x00]
         ))),
-        match_byte(0x00).take_until_n(4).parse(&input)
+        expect_byte(0x00).take_until_n(4).parse(&input)
     );
 }
 
@@ -109,7 +109,7 @@ fn take_until_n_will_match_only_up_to_specified_limit() {
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[3..], vec![0x00, 0x00, 0x00]))),
-        match_byte(0x00).take_until_n(3).parse(&input)
+        expect_byte(0x00).take_until_n(3).parse(&input)
     );
 }
 
@@ -119,7 +119,7 @@ fn take_until_n_will_return_as_many_matches_as_possible() {
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
-        match_byte(0x00).take_until_n(3).parse(&input)
+        expect_byte(0x00).take_until_n(3).parse(&input)
     );
 }
 
@@ -129,7 +129,7 @@ fn take_until_n_returns_a_no_match_on_no_match() {
 
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
-        match_byte(0x03).take_until_n(2).parse(&input)
+        expect_byte(0x03).take_until_n(2).parse(&input)
     );
 }
 
@@ -142,7 +142,7 @@ fn parser_can_match_with_take_n() {
             &input[4..],
             vec![0x00, 0x00, 0x00, 0x00]
         ))),
-        take_n(match_byte(0x00), 4).parse(&input)
+        take_n(expect_byte(0x00), 4).parse(&input)
     );
 }
 
@@ -155,7 +155,7 @@ fn parser_can_match_with_boxed_take_n() {
             &input[4..],
             vec![0x00, 0x00, 0x00, 0x00]
         ))),
-        match_byte(0x00).take_n(4).parse(&input)
+        expect_byte(0x00).take_n(4).parse(&input)
     );
 }
 
@@ -165,7 +165,7 @@ fn take_n_will_match_only_up_to_specified_limit() {
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[3..], vec![0x00, 0x00, 0x00]))),
-        match_byte(0x00).take_n(3).parse(&input)
+        expect_byte(0x00).take_n(3).parse(&input)
     );
 }
 
@@ -175,7 +175,7 @@ fn take_n_will_not_match_if_unable_to_match_n_results() {
 
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
-        match_byte(0x00).take_n(3).parse(&input)
+        expect_byte(0x00).take_n(3).parse(&input)
     );
 }
 
@@ -185,7 +185,7 @@ fn take_n_returns_a_no_match_on_no_match() {
 
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
-        match_byte(0x03).take_n(2).parse(&input)
+        expect_byte(0x03).take_n(2).parse(&input)
     );
 }
 
@@ -195,7 +195,7 @@ fn parser_joins_values_on_match_with_join_combinator() {
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[2..], (0x00, 0x01)))),
-        join(match_byte(0x00), match_byte(0x01)).parse(&input)
+        join(expect_byte(0x00), expect_byte(0x01)).parse(&input)
     );
 }
 
@@ -205,12 +205,12 @@ fn applicatives_can_retrieve_each_independent_value() {
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[2..], 0x00))),
-        left(join(match_byte(0x00), match_byte(0x01))).parse(&input)
+        left(join(expect_byte(0x00), expect_byte(0x01))).parse(&input)
     );
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[2..], 0x01))),
-        right(join(match_byte(0x00), match_byte(0x01))).parse(&input)
+        right(join(expect_byte(0x00), expect_byte(0x01))).parse(&input)
     );
 }
 
@@ -250,7 +250,7 @@ fn one_or_more_returns_no_match_when_no_matches_exist() {
 
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
-        one_or_more(match_byte(0x01)).parse(&input)
+        one_or_more(expect_byte(0x01)).parse(&input)
     );
 }
 
@@ -260,7 +260,7 @@ fn zero_or_more_returns_match_when_matches_exist() {
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[1..], vec![0x00]))),
-        zero_or_more(match_byte(0x00)).parse(&input)
+        zero_or_more(expect_byte(0x00)).parse(&input)
     );
 }
 
@@ -270,7 +270,7 @@ fn zero_or_more_returns_match_when_no_matches_exist() {
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[0..], Vec::new()))),
-        zero_or_more(match_byte(0x01)).parse(&input)
+        zero_or_more(expect_byte(0x01)).parse(&input)
     );
 }
 
@@ -280,7 +280,7 @@ fn optional_matches_on_zero() {
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[0..], None))),
-        optional(match_byte(0x01)).parse(&input)
+        optional(expect_byte(0x01)).parse(&input)
     );
 }
 
@@ -290,6 +290,6 @@ fn optional_matches_on_one() {
 
     assert_eq!(
         Ok(MatchStatus::Match((&input[1..], Some(0x00)))),
-        optional(match_byte(0x00)).parse(&input)
+        optional(expect_byte(0x00)).parse(&input)
     );
 }
