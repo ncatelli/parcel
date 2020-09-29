@@ -3,7 +3,11 @@ name = "parcel"
 version = "1.6.0"
 authors = ["Nate Catelli <ncatelli@packetfire.org>"]
 edition = "2018"
-publish = false
+description = "A toy parser combinator library for rust."
+license-file = "LICENSE"
+readme = "README.md"
+repository = "https://github.com/ncatelli/parcel/"
+keywords = ["parser", "parser combinators"]
 
 [dev-dependencies]
 criterion = "0.3"
