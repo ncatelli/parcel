@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 extern crate parcel;
-use parcel::parsers::byte::{any_byte, match_byte};
+use parcel::parsers::byte::{any_byte, expect_byte};
 use parcel::Parser;
 
 fn parse_map(c: &mut Criterion) {
@@ -9,13 +9,13 @@ fn parse_map(c: &mut Criterion) {
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = parcel::map(match_byte(0x00), |result| result).parse(black_box(&seed_vec));
+            let _expr = parcel::map(expect_byte(0x00), |result| result).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = match_byte(0x00)
+            let _expr = expect_byte(0x00)
                 .map(|result| result)
                 .parse(black_box(&seed_vec));
         });
@@ -28,13 +28,13 @@ fn parse_skip(c: &mut Criterion) {
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = parcel::skip(match_byte(0x00)).parse(black_box(&seed_vec));
+            let _expr = parcel::skip(expect_byte(0x00)).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = match_byte(0x00).skip().parse(black_box(&seed_vec));
+            let _expr = expect_byte(0x00).skip().parse(black_box(&seed_vec));
         });
     });
 }
@@ -46,14 +46,14 @@ fn parse_or(c: &mut Criterion) {
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
             let _expr =
-                parcel::or(match_byte(0x02), || match_byte(0x00)).parse(black_box(&seed_vec));
+                parcel::or(expect_byte(0x02), || expect_byte(0x00)).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = match_byte(0x02)
-                .or(|| match_byte(0x00))
+            let _expr = expect_byte(0x02)
+                .or(|| expect_byte(0x00))
                 .parse(black_box(&seed_vec));
         });
     });
@@ -66,8 +66,12 @@ fn parse_one_of(c: &mut Criterion) {
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = parcel::one_of(vec![match_byte(0x02), match_byte(0x01), match_byte(0x00)])
-                .parse(black_box(&seed_vec));
+            let _expr = parcel::one_of(vec![
+                expect_byte(0x02),
+                expect_byte(0x01),
+                expect_byte(0x00),
+            ])
+            .parse(black_box(&seed_vec));
         });
     });
     group.finish();
@@ -79,15 +83,15 @@ fn parse_and_then(c: &mut Criterion) {
 
     group.bench_function("combinator with u8 vec", |b| {
         b.iter(|| {
-            let _expr = parcel::and_then(match_byte(0x00), |_| match_byte(0x01))
+            let _expr = parcel::and_then(expect_byte(0x00), |_| expect_byte(0x01))
                 .parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = match_byte(0x00)
-                .and_then(|_| match_byte(0x01))
+            let _expr = expect_byte(0x00)
+                .and_then(|_| expect_byte(0x01))
                 .parse(black_box(&seed_vec));
         });
     });
@@ -100,13 +104,15 @@ fn parse_take_until_n(c: &mut Criterion) {
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = parcel::take_until_n(match_byte(0x00), 4).parse(black_box(&seed_vec));
+            let _expr = parcel::take_until_n(expect_byte(0x00), 4).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = match_byte(0x00).take_until_n(4).parse(black_box(&seed_vec));
+            let _expr = expect_byte(0x00)
+                .take_until_n(4)
+                .parse(black_box(&seed_vec));
         });
     });
     group.finish();
@@ -118,13 +124,13 @@ fn parse_take_n(c: &mut Criterion) {
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = parcel::take_n(match_byte(0x00), 4).parse(black_box(&seed_vec));
+            let _expr = parcel::take_n(expect_byte(0x00), 4).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = match_byte(0x00).take_n(4).parse(black_box(&seed_vec));
+            let _expr = expect_byte(0x00).take_n(4).parse(black_box(&seed_vec));
         });
     });
     group.finish();
@@ -156,13 +162,13 @@ fn parse_zero_or_more(c: &mut Criterion) {
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = parcel::zero_or_more(match_byte(0x00)).parse(black_box(&seed_vec));
+            let _expr = parcel::zero_or_more(expect_byte(0x00)).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = match_byte(0x00).zero_or_more().parse(black_box(&seed_vec));
+            let _expr = expect_byte(0x00).zero_or_more().parse(black_box(&seed_vec));
         });
     });
     group.finish();
@@ -174,13 +180,13 @@ fn parse_one_or_more(c: &mut Criterion) {
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = parcel::one_or_more(match_byte(0x00)).parse(black_box(&seed_vec));
+            let _expr = parcel::one_or_more(expect_byte(0x00)).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = match_byte(0x00).one_or_more().parse(black_box(&seed_vec));
+            let _expr = expect_byte(0x00).one_or_more().parse(black_box(&seed_vec));
         });
     });
     group.finish()
@@ -192,13 +198,13 @@ fn parse_optional(c: &mut Criterion) {
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = parcel::optional(match_byte(0x00)).parse(black_box(&seed_vec));
+            let _expr = parcel::optional(expect_byte(0x00)).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("boxed combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = match_byte(0x00).optional().parse(black_box(&seed_vec));
+            let _expr = expect_byte(0x00).optional().parse(black_box(&seed_vec));
         });
     });
     group.finish()
@@ -211,20 +217,20 @@ fn parse_applicatives(c: &mut Criterion) {
     group.bench_function("join combinator with byte vec", |b| {
         b.iter(|| {
             let _expr =
-                parcel::join(match_byte(0x00), match_byte(0x01)).parse(black_box(&seed_vec));
+                parcel::join(expect_byte(0x00), expect_byte(0x01)).parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("left combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = parcel::left(parcel::join(match_byte(0x00), match_byte(0x01)))
+            let _expr = parcel::left(parcel::join(expect_byte(0x00), expect_byte(0x01)))
                 .parse(black_box(&seed_vec));
         });
     });
 
     group.bench_function("right combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = parcel::right(parcel::join(match_byte(0x00), match_byte(0x01)))
+            let _expr = parcel::right(parcel::join(expect_byte(0x00), expect_byte(0x01)))
                 .parse(black_box(&seed_vec));
         });
     });
