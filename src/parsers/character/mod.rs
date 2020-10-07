@@ -63,6 +63,49 @@ pub fn any_character<'a>() -> impl Parser<'a, &'a [char], char> {
     }
 }
 
+/// Matches any single character that is not classified as whitespaces as
+/// defined in the [Unicode Character Database](https://www.unicode.org/reports/tr44/).
+/// Returning a `Match` result containing the next character in the stream if
+/// there is one available to consume.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::any_non_whitespace_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+///   any_non_whitespace_character().parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::any_non_whitespace_character;
+/// let input = vec![' '];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   any_non_whitespace_character().parse(&input[0..])
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::any_non_whitespace_character;
+/// let input = vec![];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   any_non_whitespace_character().parse(&input[0..])
+/// );
+/// ```
+pub fn any_non_whitespace_character<'a>() -> impl Parser<'a, &'a [char], char> {
+    move |input: &'a [char]| match input.get(0) {
+        Some(&next) if !next.is_whitespace() => Ok(MatchStatus::Match((&input[1..], next))),
+        _ => Ok(MatchStatus::NoMatch(input)),
+    }
+}
+
 /// Matches a single provided &str, returning match if the next characters in
 /// the array matches the expected str. Otherwise, a `NoMatch` is returned.
 ///
