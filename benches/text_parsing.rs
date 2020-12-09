@@ -99,6 +99,27 @@ fn parse_and_then(c: &mut Criterion) {
     group.finish();
 }
 
+fn parse_peek_next(c: &mut Criterion) {
+    let mut group = c.benchmark_group("peek_next combinator");
+    let seed_vec = vec!['a', 'b', 'c'];
+
+    group.bench_function("combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = parcel::peek_next(expect_character('a'), expect_character('b'))
+                .parse(black_box(&seed_vec));
+        });
+    });
+
+    group.bench_function("boxed combinator with char vec", |b| {
+        b.iter(|| {
+            let _expr = expect_character('a')
+                .peek_next(expect_character('b'))
+                .parse(black_box(&seed_vec));
+        });
+    });
+    group.finish();
+}
+
 fn parse_take_until_n(c: &mut Criterion) {
     let mut group = c.benchmark_group("take_until_n combinator");
     let seed_vec = vec!['a', 'a', 'a', 'a', 'b', 'c'];
@@ -251,6 +272,7 @@ criterion_group!(
     parse_or,
     parse_one_of,
     parse_and_then,
+    parse_peek_next,
     parse_take_n,
     parse_take_until_n,
     parse_predicate,

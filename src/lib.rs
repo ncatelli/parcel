@@ -168,6 +168,46 @@ pub trait Parser<'a, Input, Output> {
         BoxedParser::new(and_then(self, thunk))
     }
 
+    /// Returns a match if Parser<A, B> matches and then Parser<A, C> matches,
+    /// returning the results of the first parser without consuming the second
+    /// value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///     Ok(MatchStatus::Match((&input[1..], 'a'))),
+    ///     expect_character('a')
+    ///         .peek_next(expect_character('b'))
+    ///         .parse(&input[0..])
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///     Ok(MatchStatus::NoMatch(&input[0..])),
+    ///     expect_character('a')
+    ///         .peek_next(expect_character('c'))
+    ///         .parse(&input[0..])
+    /// );
+    /// ```
+    fn peek_next<NextParser, NewOutput>(self, second: NextParser) -> BoxedParser<'a, Input, Output>
+    where
+        Self: Sized + 'a,
+        Input: Copy + Borrow<Input> + 'a,
+        Output: 'a,
+        NewOutput: 'a,
+        NextParser: Parser<'a, Input, NewOutput> + 'a,
+    {
+        BoxedParser::new(peek_next(self, second))
+    }
+
     /// Attempts to consume until n matches have occured. A match is returned
     /// if 1 < result count <= n. Functionally this behaves like a bounded
     /// version of the `one_or_more` parser.
@@ -639,6 +679,59 @@ where
     move |input| match parser.parse(input) {
         Ok(ms) => match ms {
             MatchStatus::Match((next_input, result)) => f(result).parse(next_input),
+            MatchStatus::NoMatch(last_input) => Ok(MatchStatus::NoMatch(last_input)),
+        },
+        Err(e) => Err(e),
+    }
+}
+
+/// Returns a match if Parser<A, B> matches and then Parser<A, C> matches,
+/// returning the results of the first parser without consuming the second
+/// value.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+///   parcel::peek_next(
+///       expect_character('a'),
+///       expect_character('b'),
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input = vec!['a', 'b', 'c'];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   parcel::peek_next(
+///       expect_character('a'),
+///       expect_character('c'),
+///   ).parse(&input)
+/// );
+/// ```
+pub fn peek_next<'a, P1, P2, A, B, C>(first: P1, second: P2) -> impl Parser<'a, A, B>
+where
+    A: Copy + Borrow<A> + 'a,
+    P1: Parser<'a, A, B>,
+    P2: Parser<'a, A, C>,
+{
+    move |input| match first.parse(input) {
+        Ok(ms) => match ms {
+            MatchStatus::Match((next_input, result)) => {
+                let first_input = next_input;
+                if let Ok(MatchStatus::Match(_)) = second.parse(next_input) {
+                    Ok(MatchStatus::Match((first_input, result)))
+                } else {
+                    Ok(MatchStatus::NoMatch(input))
+                }
+            }
             MatchStatus::NoMatch(last_input) => Ok(MatchStatus::NoMatch(last_input)),
         },
         Err(e) => Err(e),
