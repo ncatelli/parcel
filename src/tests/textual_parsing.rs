@@ -62,18 +62,6 @@ fn parser_can_match_with_one_of() {
 }
 
 #[test]
-fn parser_can_match_with_and_then() {
-    let input = vec!['a', 'b', 'c'];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[2..], 'b'))),
-        expect_character('a')
-            .and_then(|_| expect_character('b'))
-            .parse(&input[0..])
-    );
-}
-
-#[test]
 fn parser_can_match_with_peek_next() {
     let input = vec!['a', 'b', 'c'];
 

@@ -156,6 +156,16 @@ pub trait Parser<'a, Input, Output> {
     ///
     /// ```
     /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::byte::expect_byte;
+    /// let input = vec![0x00, 0x01, 0x02];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], 0x01))),
+    ///   expect_byte(0x00).and_then(|_| expect_byte(0x01)).parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
     /// let input = vec!['a', 'b', 'c'];
     /// assert_eq!(

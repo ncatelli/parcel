@@ -56,18 +56,6 @@ fn parser_can_match_with_one_of() {
 }
 
 #[test]
-fn parser_can_match_with_and_then() {
-    let input = vec![0x00, 0x01, 0x02];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[2..], 0x01))),
-        expect_byte(0x00)
-            .and_then(|_| expect_byte(0x01))
-            .parse(&input)
-    );
-}
-
-#[test]
 fn parser_can_match_with_peek_next() {
     let input = vec![0x00, 0x01, 0x02];
 
