@@ -69,19 +69,6 @@ fn parser_can_match_with_take_until_n() {
 }
 
 #[test]
-fn parser_can_match_with_boxed_take_until_n() {
-    let input = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((
-            &input[4..],
-            vec![0x00, 0x00, 0x00, 0x00]
-        ))),
-        expect_byte(0x00).take_until_n(4).parse(&input)
-    );
-}
-
-#[test]
 fn take_until_n_will_match_only_up_to_specified_limit() {
     let input = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
 

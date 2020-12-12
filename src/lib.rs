@@ -265,6 +265,26 @@ pub trait Parser<'a, Input, Output> {
     ///   expect_character('a').take_until_n(2).parse(&input)
     /// );
     /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::byte::expect_byte;
+    /// let input = vec![0x00, 0x00, 0x00];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+    ///   expect_byte(0x00).take_until_n(2).parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::byte::expect_byte;
+    /// let input = vec![0x00, 0x01, 0x02];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[1..], vec![0x00]))),
+    ///   expect_byte(0x00).take_until_n(2).parse(&input)
+    /// );
+    /// ```
     fn take_until_n(self, n: usize) -> BoxedParser<'a, Input, Vec<Output>>
     where
         Self: Sized + 'a,

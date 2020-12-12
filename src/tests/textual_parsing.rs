@@ -72,16 +72,6 @@ fn parser_can_match_with_take_until_n() {
 }
 
 #[test]
-fn parser_can_match_with_boxed_take_until_n() {
-    let input = vec!['a', 'a', 'a', 'a', 'b', 'c'];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[4..], vec!['a', 'a', 'a', 'a']))),
-        expect_character('a').take_until_n(4).parse(&input[0..])
-    );
-}
-
-#[test]
 fn take_until_n_will_match_only_up_to_specified_limit() {
     let input = vec!['a', 'a', 'a', 'a', 'b', 'c'];
 
