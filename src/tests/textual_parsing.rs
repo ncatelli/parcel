@@ -48,18 +48,6 @@ fn parser_should_not_skip_input_if_parser_does_not_match() {
 }
 
 #[test]
-fn parser_can_match_with_or() {
-    let input = vec!['a', 'b', 'c'];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[1..], 'a'))),
-        expect_character('d')
-            .or(|| expect_character('a'))
-            .parse(&input[0..])
-    );
-}
-
-#[test]
 fn parser_can_match_with_one_of() {
     let input = vec!['a', 'b', 'c'];
     let parsers = vec![

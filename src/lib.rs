@@ -118,6 +118,16 @@ pub trait Parser<'a, Input, Output> {
     ///   expect_character('b').or(|| expect_character('a')).parse(&input)
     /// );
     /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::byte::expect_byte;
+    /// let input = vec![0x00, 0x01, 0x02];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[1..], 0x00))),
+    ///   expect_byte(0x01).or(|| expect_byte(0x00)).parse(&input)
+    /// );
+    /// ```
     fn or<P>(self, thunk: impl Fn() -> P + 'a) -> BoxedParser<'a, Input, Output>
     where
         Self: Sized + 'a,

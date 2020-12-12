@@ -46,16 +46,6 @@ fn parser_should_not_skip_input_if_parser_does_not_match() {
 }
 
 #[test]
-fn parser_can_match_with_or() {
-    let input = vec![0x00, 0x01, 0x02];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[1..], 0x00))),
-        expect_byte(0x03).or(|| expect_byte(0x00)).parse(&input)
-    );
-}
-
-#[test]
 fn parser_can_match_with_one_of() {
     let input = vec![0x00, 0x01, 0x02];
     let parsers = vec![expect_byte(0x01), expect_byte(0x02), expect_byte(0x00)];
