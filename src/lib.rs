@@ -636,7 +636,27 @@ pub trait Parser<'a, Input, Output> {
     /// let input = vec!['a', 'b', 'c'];
     /// assert_eq!(
     ///   Ok(parcel::MatchStatus::Match((&input[0..], None))),
-    ///   parcel::optional(expect_character('c')).parse(&input)
+    ///   expect_character('c').optional().parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::byte::expect_byte;
+    /// let input = vec![0x00, 0x01, 0x02];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[1..], Some(0x00)))),
+    ///   expect_byte(0x00).optional().parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::byte::expect_byte;
+    /// let input = vec![0x00, 0x01, 0x02];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[0..], None))),
+    ///   expect_byte(0x02).optional().parse(&input)
     /// );
     /// ```
     fn optional(self) -> BoxedParser<'a, Input, Option<Output>>

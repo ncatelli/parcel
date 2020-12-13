@@ -1,6 +1,6 @@
 use crate::parsers::character::{any_character, expect_character};
 use crate::prelude::v1::*;
-use crate::{join, left, optional, predicate, right, take_until_n};
+use crate::{join, left, predicate, right, take_until_n};
 
 #[test]
 fn parser_should_parse_char_match() {
@@ -128,25 +128,5 @@ fn predicate_should_not_match_if_case_is_true() {
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
         predicate(any_character(), |&c| c != 'a').parse(&input[0..])
-    );
-}
-
-#[test]
-fn optional_matches_on_zero() {
-    let input = vec!['a', 'b', 'c'];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[0..], None))),
-        optional(expect_character('b')).parse(&input[0..])
-    );
-}
-
-#[test]
-fn optional_matches_on_one() {
-    let input = vec!['a', 'b', 'c'];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[1..], Some('a')))),
-        optional(expect_character('a')).parse(&input[0..])
     );
 }
