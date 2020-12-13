@@ -1134,6 +1134,26 @@ where
 ///   parcel::take_n(expect_character('a'), 2).parse(&input)
 /// );
 /// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x00, 0x00];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+///   parcel::take_n(expect_byte(0x00), 2).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   parcel::take_n(expect_byte(0x00), 2).parse(&input)
+/// );
+/// ```
 pub fn take_n<'a, P, A, B>(parser: P, n: usize) -> impl Parser<'a, A, Vec<B>>
 where
     A: Copy + 'a,
