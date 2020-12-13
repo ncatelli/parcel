@@ -915,6 +915,33 @@ where
 ///       })).parse(&input)
 /// );
 /// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], 0x01))),
+///   parcel::and_then(
+///       expect_byte(0x00),
+///       |_| expect_byte(0x01),
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], "01".to_string()))),
+///   parcel::and_then(
+///       expect_byte(0x00),
+///       |first_match| expect_byte(0x01).map(move |second_match| {
+///          format!("{}{}", first_match, second_match)
+///       })).parse(&input)
+/// );
+/// ```
 pub fn and_then<'a, P1, F, P2, A, B, C>(parser: P1, f: F) -> impl Parser<'a, A, C>
 where
     A: 'a,
