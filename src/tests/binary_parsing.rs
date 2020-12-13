@@ -1,6 +1,6 @@
 use crate::parsers::byte::{any_byte, expect_byte};
 use crate::prelude::v1::*;
-use crate::{join, left, one_or_more, optional, predicate, right, take_until_n};
+use crate::{join, left, optional, predicate, right, take_until_n};
 
 #[test]
 fn parser_should_parse_byte_match() {
@@ -137,16 +137,6 @@ fn predicate_should_not_match_if_case_is_true() {
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
         predicate(any_byte(), |&c| c != 0x00).parse(&input)
-    );
-}
-
-#[test]
-fn one_or_more_returns_no_match_when_no_matches_exist() {
-    let input = vec![0x00, 0x01, 0x02];
-
-    assert_eq!(
-        Ok(MatchStatus::NoMatch(&input[0..])),
-        one_or_more(expect_byte(0x01)).parse(&input)
     );
 }
 
