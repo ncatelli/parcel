@@ -1210,6 +1210,28 @@ where
 ///   ).parse(&input)
 /// );
 /// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::any_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[1..], 0x00))),
+///   parcel::predicate(any_byte(), |&b| b != 0x02).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::any_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x01]))),
+///   parcel::one_or_more(
+///       parcel::predicate(any_byte(), |&b| b != 0x02)
+///   ).parse(&input)
+/// );
+/// ```
 pub fn predicate<'a, P, A, B, F>(parser: P, pred_case: F) -> impl Parser<'a, A, B>
 where
     A: Copy + 'a,
