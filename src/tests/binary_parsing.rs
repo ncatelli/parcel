@@ -13,16 +13,6 @@ fn parser_should_parse_byte_match() {
 }
 
 #[test]
-fn parser_can_map_a_result() {
-    let input = vec![0x00, 0x01, 0x02];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[1..], 0x00))),
-        expect_byte(0x00).map(|result| result).parse(&input)
-    );
-}
-
-#[test]
 fn parser_should_skip_a_result() {
     let input = vec![0x00, 0x01, 0x02];
 

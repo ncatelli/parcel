@@ -13,18 +13,6 @@ fn parser_should_parse_char_match() {
 }
 
 #[test]
-fn parser_can_map_a_result() {
-    let input = vec!['a', 'b', 'c'];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[1..], 'a'.to_string()))),
-        expect_character('a')
-            .map(|result| { result.to_string() })
-            .parse(&input[0..])
-    );
-}
-
-#[test]
 fn parser_should_skip_a_result() {
     let input = vec!['a', 'b', 'c'];
 
