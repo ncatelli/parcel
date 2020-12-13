@@ -135,7 +135,7 @@ pub fn expect_str<'a>(expected: &'static str) -> impl Parser<'a, &'a [char], Str
         let preparse_input = input;
         let expected_len = expected.len();
         let next: String = input.iter().take(expected_len).collect();
-        if &next == expected {
+        if next == expected {
             Ok(MatchStatus::Match((&input[expected_len..], next)))
         } else {
             Ok(MatchStatus::NoMatch(preparse_input))
