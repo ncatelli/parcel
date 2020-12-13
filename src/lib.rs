@@ -156,16 +156,6 @@ pub trait Parser<'a, Input, Output> {
     ///
     /// ```
     /// use parcel::prelude::v1::*;
-    /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
-    /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], 0x01))),
-    ///   expect_byte(0x00).and_then(|_| expect_byte(0x01)).parse(&input)
-    /// );
-    /// ```
-    ///
-    /// ```
-    /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
     /// let input = vec!['a', 'b', 'c'];
     /// assert_eq!(
@@ -176,6 +166,30 @@ pub trait Parser<'a, Input, Output> {
     ///       })).parse(&input)
     /// );
     /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::byte::expect_byte;
+    /// let input = vec![0x00, 0x01, 0x02];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], 0x01))),
+    ///   expect_byte(0x00).and_then(|_| expect_byte(0x01)).parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::byte::expect_byte;
+    /// let input = vec![0x00, 0x01, 0x02];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], "01".to_string()))),
+    ///   expect_byte(0x00).and_then(
+    ///       |first_match| expect_byte(0x01).map(move |second_match| {
+    ///          format!("{}{}", first_match, second_match)
+    ///       })).parse(&input)
+    /// );
+    /// ```
+
     fn and_then<F, NextParser, NewOutput>(self, thunk: F) -> BoxedParser<'a, Input, NewOutput>
     where
         Self: Sized + 'a,
@@ -208,6 +222,18 @@ pub trait Parser<'a, Input, Output> {
     ///
     /// ```
     /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::character::expect_character;
+    /// let input = vec!['a', 'b', 'c'];
+    /// assert_eq!(
+    ///     Ok(MatchStatus::NoMatch(&input[0..])),
+    ///     expect_character('a')
+    ///         .peek_next(expect_character('c'))
+    ///         .parse(&input[0..])
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
     /// let input = vec![0x00, 0x01, 0x02];
     /// assert_eq!(
@@ -220,12 +246,12 @@ pub trait Parser<'a, Input, Output> {
     ///
     /// ```
     /// use parcel::prelude::v1::*;
-    /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// use parcel::parsers::byte::expect_byte;
+    /// let input = vec![0x00, 0x01, 0x02];
     /// assert_eq!(
     ///     Ok(MatchStatus::NoMatch(&input[0..])),
-    ///     expect_character('a')
-    ///         .peek_next(expect_character('c'))
+    ///     expect_byte(0x00)
+    ///         .peek_next(expect_byte(0x02))
     ///         .parse(&input[0..])
     /// );
     /// ```
