@@ -97,16 +97,6 @@ fn take_n_returns_a_no_match_on_no_match() {
 }
 
 #[test]
-fn parser_joins_values_on_match_with_join_combinator() {
-    let input = vec!['a', 'b', 'c'];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[2..], ('a', 'b')))),
-        join(expect_character('a'), expect_character('b')).parse(&input[0..])
-    );
-}
-
-#[test]
 fn applicatives_can_retrieve_each_independent_value() {
     let input = vec!['a', 'b', 'c'];
 

@@ -1447,6 +1447,16 @@ where
 ///   parcel::join(expect_character('a'), expect_character('b')).parse(&input)
 /// );
 /// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], (0x00, 0x01)))),
+///   parcel::join(expect_byte(0x00), expect_byte(0x01)).parse(&input)
+/// );
+/// ```
 pub fn join<'a, P1, P2, A, B, C>(parser1: P1, parser2: P2) -> impl Parser<'a, A, (B, C)>
 where
     A: Copy + Borrow<A> + 'a,

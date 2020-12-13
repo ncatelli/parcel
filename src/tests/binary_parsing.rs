@@ -23,16 +23,6 @@ fn parser_should_not_skip_input_if_parser_does_not_match() {
 }
 
 #[test]
-fn parser_can_match_with_one_of() {
-    let input = vec![0x00, 0x01, 0x02];
-    let parsers = vec![expect_byte(0x01), expect_byte(0x02), expect_byte(0x00)];
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[1..], 0x00))),
-        crate::one_of(parsers).parse(&input)
-    );
-}
-
-#[test]
 fn parser_can_match_with_take_until_n() {
     let input = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
 
@@ -82,16 +72,6 @@ fn take_n_returns_a_no_match_on_no_match() {
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
         expect_byte(0x03).take_n(2).parse(&input)
-    );
-}
-
-#[test]
-fn parser_joins_values_on_match_with_join_combinator() {
-    let input = vec![0x00, 0x01, 0x02];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[2..], (0x00, 0x01)))),
-        join(expect_byte(0x00), expect_byte(0x01)).parse(&input)
     );
 }
 
