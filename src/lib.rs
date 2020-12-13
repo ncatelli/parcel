@@ -862,6 +862,16 @@ where
 ///   parcel::skip(expect_character('a')).parse(&input)
 /// );
 /// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[1..])),
+///   parcel::skip(expect_byte(0x00)).parse(&input)
+/// );
+/// ```
 pub fn skip<'a, P, A, B>(parser: P) -> impl Parser<'a, A, B>
 where
     A: 'a,
