@@ -1397,6 +1397,26 @@ where
 ///   parcel::optional(expect_character('c')).parse(&input)
 /// );
 /// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[1..], Some(0x00)))),
+///   parcel::optional(expect_byte(0x00)).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[0..], None))),
+///   parcel::optional(expect_byte(0x02)).parse(&input)
+/// );
+/// ```
 pub fn optional<'a, P, A, B>(parser: P) -> impl Parser<'a, A, Option<B>>
 where
     A: Copy + 'a,
