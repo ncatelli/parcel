@@ -989,6 +989,32 @@ where
 ///   ).parse(&input)
 /// );
 /// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[1..], 0x00))),
+///   parcel::peek_next(
+///       expect_byte(0x00),
+///       expect_byte(0x01),
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   parcel::peek_next(
+///       expect_byte(0x00),
+///       expect_byte(0x02),
+///   ).parse(&input)
+/// );
+/// ```
 pub fn peek_next<'a, P1, P2, A, B, C>(first: P1, second: P2) -> impl Parser<'a, A, B>
 where
     A: Copy + Borrow<A> + 'a,
