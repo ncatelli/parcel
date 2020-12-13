@@ -146,32 +146,12 @@ fn applicatives_can_retrieve_each_independent_value() {
 }
 
 #[test]
-fn predicate_should_match_if_case_fail() {
-    let input = vec!['a', 'b', 'c'];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[1..], 'a'))),
-        predicate(any_character(), |&c| c != 'c').parse(&input[0..])
-    );
-}
-
-#[test]
 fn predicate_should_not_match_if_case_is_true() {
     let input = vec!['a', 'b', 'c'];
 
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
         predicate(any_character(), |&c| c != 'a').parse(&input[0..])
-    );
-}
-
-#[test]
-fn predicate_should_match_until_case_fails() {
-    let input = vec!['a', 'b', 'c'];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[2..], vec!['a', 'b']))),
-        zero_or_more(predicate(any_character(), |&c| c != 'c')).parse(&input[0..])
     );
 }
 

@@ -133,32 +133,12 @@ fn applicatives_can_retrieve_each_independent_value() {
 }
 
 #[test]
-fn predicate_should_match_if_case_fail() {
-    let input = vec![0x00, 0x01, 0x02];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[1..], 0x00))),
-        predicate(any_byte(), |&b| b != 0x02).parse(&input)
-    );
-}
-
-#[test]
 fn predicate_should_not_match_if_case_is_true() {
     let input = vec![0x00, 0x01, 0x02];
 
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
         predicate(any_byte(), |&c| c != 0x00).parse(&input)
-    );
-}
-
-#[test]
-fn predicate_should_match_until_case_fails() {
-    let input = vec![0x00, 0x01, 0x02];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[2..], vec![0x00, 0x01]))),
-        zero_or_more(predicate(any_byte(), |&c| c != 0x02)).parse(&input)
     );
 }
 

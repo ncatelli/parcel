@@ -403,6 +403,28 @@ pub trait Parser<'a, Input, Output> {
     ///   ).parse(&input)
     /// );
     /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::byte::any_byte;
+    /// let input = vec![0x00, 0x01, 0x02];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[1..], 0x00))),
+    ///   any_byte().predicate(|&b| b != 0x02).parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::byte::any_byte;
+    /// let input = vec![0x00, 0x01, 0x02];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x01]))),
+    ///   parcel::one_or_more(
+    ///       any_byte().predicate(|&b| b != 0x02)
+    ///   ).parse(&input)
+    /// );
+    /// ```
     fn predicate<F>(self, predicate_case: F) -> BoxedParser<'a, Input, Output>
     where
         Self: Sized + 'a,
