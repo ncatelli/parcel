@@ -459,6 +459,26 @@ pub trait Parser<'a, Input, Output> {
     ///   expect_character('c').zero_or_more().parse(&input)
     /// );
     /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::byte::expect_byte;
+    /// let input = vec![0x00, 0x00, 0x01];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+    ///   expect_byte(0x00).zero_or_more().parse(&input)
+    /// );
+    /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::byte::expect_byte;
+    /// let input = vec![0x00, 0x01, 0x02];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::Match((&input[0..], vec![]))),
+    ///   expect_byte(0x02).zero_or_more().parse(&input)
+    /// );
+    /// ```
     fn zero_or_more(self) -> BoxedParser<'a, Input, Vec<Output>>
     where
         Self: Sized + 'a,
