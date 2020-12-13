@@ -772,6 +772,17 @@ where
 ///   parcel::one_of(parsers).parse(&input)
 /// );
 /// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// let parsers = vec![expect_byte(0x01), expect_byte(0x02), expect_byte(0x00)];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[1..], 0x00))),
+///   parcel::one_of(parsers).parse(&input)
+/// );
+/// ```
 pub fn one_of<'a, P, A, B>(parsers: Vec<P>) -> impl Parser<'a, A, B>
 where
     A: Copy + 'a + Borrow<A>,
