@@ -1,8 +1,7 @@
 use crate::parsers::byte::{any_byte, expect_byte};
 use crate::prelude::v1::*;
 use crate::{
-    join, left, one_or_more, optional, predicate, right, take_n, take_until_n, zero_or_more,
-    MatchStatus,
+    join, left, one_or_more, optional, predicate, right, take_until_n, zero_or_more, MatchStatus,
 };
 
 #[test]
@@ -95,52 +94,6 @@ fn take_until_n_returns_a_no_match_on_no_match() {
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
         expect_byte(0x03).take_until_n(2).parse(&input)
-    );
-}
-
-#[test]
-fn parser_can_match_with_take_n() {
-    let input = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((
-            &input[4..],
-            vec![0x00, 0x00, 0x00, 0x00]
-        ))),
-        take_n(expect_byte(0x00), 4).parse(&input)
-    );
-}
-
-#[test]
-fn parser_can_match_with_boxed_take_n() {
-    let input = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((
-            &input[4..],
-            vec![0x00, 0x00, 0x00, 0x00]
-        ))),
-        expect_byte(0x00).take_n(4).parse(&input)
-    );
-}
-
-#[test]
-fn take_n_will_match_only_up_to_specified_limit() {
-    let input = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[3..], vec![0x00, 0x00, 0x00]))),
-        expect_byte(0x00).take_n(3).parse(&input)
-    );
-}
-
-#[test]
-fn take_n_will_not_match_if_unable_to_match_n_results() {
-    let input = vec![0x00, 0x00, 0x01, 0x02];
-
-    assert_eq!(
-        Ok(MatchStatus::NoMatch(&input[0..])),
-        expect_byte(0x00).take_n(3).parse(&input)
     );
 }
 
