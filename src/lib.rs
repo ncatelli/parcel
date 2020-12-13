@@ -1272,6 +1272,26 @@ where
 ///   parcel::zero_or_more(expect_character('c')).parse(&input)
 /// );
 /// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x00, 0x01];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+///   parcel::zero_or_more(expect_byte(0x00)).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[0..], vec![]))),
+///   parcel::zero_or_more(expect_byte(0x02)).parse(&input)
+/// );
+/// ```
 pub fn zero_or_more<'a, P, A, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
 where
     A: Copy + 'a,
@@ -1310,6 +1330,26 @@ where
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
 ///   parcel::one_or_more(expect_character('c')).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x00, 0x01];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+///   parcel::one_or_more(expect_byte(0x00)).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   parcel::one_or_more(expect_byte(0x02)).parse(&input)
 /// );
 /// ```
 pub fn one_or_more<'a, P, A, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
