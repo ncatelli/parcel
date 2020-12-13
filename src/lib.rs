@@ -595,6 +595,16 @@ pub trait Parser<'a, Input, Output> {
     ///   expect_character('a').skip().parse(&input)
     /// );
     /// ```
+    ///
+    /// ```
+    /// use parcel::prelude::v1::*;
+    /// use parcel::parsers::byte::expect_byte;
+    /// let input = vec![0x00, 0x01, 0x02];
+    /// assert_eq!(
+    ///   Ok(parcel::MatchStatus::NoMatch(&input[1..])),
+    ///   expect_byte(0x00).skip().parse(&input)
+    /// );
+    /// ```
     fn skip(self) -> BoxedParser<'a, Input, Output>
     where
         Self: Sized + 'a,

@@ -13,16 +13,6 @@ fn parser_should_parse_char_match() {
 }
 
 #[test]
-fn parser_should_skip_a_result() {
-    let input = vec!['a', 'b', 'c'];
-
-    assert_eq!(
-        Ok(MatchStatus::NoMatch(&input[1..])),
-        expect_character('a').skip().parse(&input[0..])
-    );
-}
-
-#[test]
 fn parser_should_not_skip_input_if_parser_does_not_match() {
     let input = vec!['a', 'b', 'c'];
 
