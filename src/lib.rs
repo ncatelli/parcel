@@ -813,10 +813,23 @@ where
 /// use parcel::parsers::character::expect_character;
 /// let input = vec!['a', 'b', 'c'];
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], "the value: a".to_string()))),
+///   Ok(parcel::MatchStatus::Match((&input[1..], "a".to_string()))),
 ///   parcel::map(
 ///       expect_character('a'),
-///       |res| format!("the value: {}", res)
+///       |res| format!("{}", res)
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[1..], "0".to_string()))),
+///   parcel::map(
+///       expect_byte(0x00),
+///       |res| format!("{}", res)
 ///   ).parse(&input)
 /// );
 /// ```
