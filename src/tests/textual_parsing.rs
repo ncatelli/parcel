@@ -1,6 +1,6 @@
 use crate::parsers::character::{any_character, expect_character};
 use crate::prelude::v1::*;
-use crate::{join, left, predicate, right, take_until_n};
+use crate::{predicate, take_until_n};
 
 #[test]
 fn parser_should_parse_char_match() {
@@ -93,21 +93,6 @@ fn take_n_returns_a_no_match_on_no_match() {
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
         expect_character('d').take_n(2).parse(&input[0..])
-    );
-}
-
-#[test]
-fn applicatives_can_retrieve_each_independent_value() {
-    let input = vec!['a', 'b', 'c'];
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[2..], 'a'))),
-        left(join(expect_character('a'), expect_character('b'))).parse(&input[0..])
-    );
-
-    assert_eq!(
-        Ok(MatchStatus::Match((&input[2..], 'b'))),
-        right(join(expect_character('a'), expect_character('b'))).parse(&input[0..])
     );
 }
 

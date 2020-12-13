@@ -1499,6 +1499,21 @@ where
 ///   ).parse(&input)
 /// );
 /// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], 0x00))),
+///   parcel::left(
+///       parcel::join(
+///           expect_byte(0x00),
+///           expect_byte(0x01)
+///       )
+///   ).parse(&input)
+/// );
+/// ```
 pub fn left<'a, P, A, B, C>(parser: P) -> impl Parser<'a, A, B>
 where
     A: Copy + Borrow<A> + 'a,
@@ -1524,6 +1539,21 @@ where
 ///       parcel::join(
 ///           expect_character('a'),
 ///           expect_character('b')
+///       )
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match((&input[2..], 0x01))),
+///   parcel::right(
+///       parcel::join(
+///           expect_byte(0x00),
+///           expect_byte(0x01)
 ///       )
 ///   ).parse(&input)
 /// );
