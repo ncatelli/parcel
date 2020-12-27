@@ -12,6 +12,41 @@ mod tests;
 
 use std::borrow::Borrow;
 
+/// Represents a positional identifier, storing column and optional information
+/// about line number.
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct Positional {
+    column: usize,
+    line: Option<usize>,
+}
+
+impl Positional {
+    /// instantiates a new positional identifier
+    pub fn new(column: usize, line: Option<usize>) -> Self {
+        Self { column, line }
+    }
+}
+
+/// Match Value represents a value returned by a parse. This wraps the response
+/// enriching it with positional data.
+#[derive(Debug, PartialEq, Clone)]
+pub struct MatchValue<T> {
+    inner: T,
+    start: Positional,
+    end: Positional,
+}
+
+impl<T> MatchValue<T> {
+    /// instantiates a new MatchValue
+    pub fn new(inner: T) -> Self {
+        Self {
+            inner,
+            start: Positional::new(0, None),
+            end: Positional::new(0, None),
+        }
+    }
+}
+
 /// MatchStatus represents a non-error parser result with two cases, signifying
 /// whether the parse returned a match or not.
 #[derive(Debug, PartialEq, Clone)]
