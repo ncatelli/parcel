@@ -37,13 +37,30 @@ pub struct MatchValue<T> {
 }
 
 impl<T> MatchValue<T> {
-    /// instantiates a new MatchValue
+    /// Instantiates a new MatchValue with empty positinal data.
     pub fn new(inner: T) -> Self {
         Self {
             inner,
             start: Positional::new(0, None),
             end: Positional::new(0, None),
         }
+    }
+
+    /// Instantiates a new MatchValue with provided positional data.
+    pub fn with_positional(inner: T, start: Positional, end: Positional) -> Self {
+        Self { inner, start, end }
+    }
+
+    /// Returns the contained value of the MatchValue
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mv = parcel::MatchValue::new('a');
+    /// assert_eq!(mv.unwrap(), 'a');
+    /// ```
+    pub fn unwrap(self) -> T {
+        self.inner
     }
 }
 
