@@ -1,6 +1,6 @@
 [package]
 name = "parcel"
-version = "1.8.0"
+version = "1.9.1"
 authors = ["Nate Catelli <ncatelli@packetfire.org>"]
 edition = "2018"
 publish = false
