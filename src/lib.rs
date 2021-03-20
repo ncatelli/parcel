@@ -12,6 +12,29 @@ mod tests;
 
 use std::borrow::Borrow;
 
+pub type Span = std::ops::Range<usize>;
+
+/// SpannedMatchStatus stores an offset of a matching pattern along with it's corresponding match.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SpannedMatchStatus<U, T> {
+    span: Option<Span>,
+    match_status: MatchStatus<U, T>,
+}
+
+impl<U, T> SpannedMatchStatus<U, T> {
+    pub fn new(span: Option<Span>, match_status: MatchStatus<U, T>) -> Self {
+        Self { span, match_status }
+    }
+
+    pub fn as_span(&self) -> Option<Span> {
+        self.span.clone()
+    }
+
+    pub fn unwrap(self) -> MatchStatus<U, T> {
+        self.match_status
+    }
+}
+
 /// MatchStatus represents a non-error parser result with two cases, signifying
 /// whether the parse returned a match or not.
 #[derive(Debug, PartialEq, Clone)]
@@ -87,9 +110,9 @@ impl<U, T> MatchStatus<U, T> {
     }
 }
 
-/// Represents the state of parser execution, wrapping the above MatchStatus
-/// and providing an Error string for any problems.
-pub type ParseResult<'a, Input, Output> = Result<MatchStatus<Input, Output>, String>;
+/// Represents the state of parser execution, wrapping the above
+/// SpannedMatchStatus and providing an Error string for any problems.
+pub type ParseResult<'a, Input, Output> = Result<SpannedMatchStatus<Input, Output>, String>;
 
 /// Parser is the primary trait serving as the basis for all child combinators.
 /// The most important function defined in this trait is parse, which defines
@@ -739,9 +762,9 @@ where
     P2: Parser<'a, A, B>,
 {
     move |input| match parser1.parse(input) {
-        Ok(match_status) => match match_status {
-            m @ MatchStatus::Match(_) => Ok(m),
-            MatchStatus::NoMatch(_) => thunk_to_parser().parse(input),
+        Ok(sms) => match (sms.as_span(), sms.unwrap()) {
+            (span, m @ MatchStatus::Match(_)) => Ok(SpannedMatchStatus::new(span, m)),
+            (_, MatchStatus::NoMatch(_)) => thunk_to_parser().parse(input),
         },
         e @ Err(_) => e,
     }
@@ -791,15 +814,17 @@ where
     move |input| {
         for parser in parsers.iter() {
             match parser.parse(input) {
-                Ok(match_status) => match match_status {
-                    m @ MatchStatus::Match(_) => return Ok(m),
-                    MatchStatus::NoMatch(_) => continue,
+                Ok(sms) => match (sms.as_span(), sms.unwrap()) {
+                    (span, m @ MatchStatus::Match(_)) => {
+                        return Ok(SpannedMatchStatus::new(span, m))
+                    }
+                    (_, MatchStatus::NoMatch(_)) => continue,
                 },
                 e @ Err(_) => return e,
             };
         }
 
-        Ok(MatchStatus::NoMatch(input))
+        Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input)))
     }
 }
 
@@ -839,12 +864,16 @@ where
     F: Fn(B) -> C + 'a,
 {
     move |input| {
-        parser.parse(input).map(|match_status| match match_status {
-            MatchStatus::Match((next_input, result)) => {
-                MatchStatus::Match((next_input, map_fn(result)))
-            }
-            MatchStatus::NoMatch(last_input) => MatchStatus::NoMatch(last_input),
-        })
+        parser
+            .parse(input)
+            .map(|sms| match (sms.as_span(), sms.unwrap()) {
+                (span, MatchStatus::Match((next_input, result))) => {
+                    SpannedMatchStatus::new(span, MatchStatus::Match((next_input, map_fn(result))))
+                }
+                (_, MatchStatus::NoMatch(last_input)) => {
+                    SpannedMatchStatus::new(None, MatchStatus::NoMatch(last_input))
+                }
+            })
     }
 }
 
@@ -878,9 +907,22 @@ where
     P: Parser<'a, A, B>,
 {
     move |input| match parser.parse(input) {
-        Ok(MatchStatus::Match((next_input, _))) => Ok(MatchStatus::NoMatch(next_input)),
-        Ok(MatchStatus::NoMatch(last_input)) => Ok(MatchStatus::NoMatch(last_input)),
+        Ok(SpannedMatchStatus {
+            span: Some(span),
+            match_status: MatchStatus::Match((next_input, _)),
+        }) => Ok(SpannedMatchStatus::new(
+            Some(span),
+            MatchStatus::NoMatch(next_input),
+        )),
+        Ok(SpannedMatchStatus {
+            span: None,
+            match_status: MatchStatus::NoMatch(last_input),
+        }) => Ok(SpannedMatchStatus::new(
+            None,
+            MatchStatus::NoMatch(last_input),
+        )),
         Err(e) => Err(e),
+        _ => Err("Invalid match type".to_string()),
     }
 }
 
@@ -950,9 +992,13 @@ where
     F: Fn(B) -> P2 + 'a,
 {
     move |input| match parser.parse(input) {
-        Ok(ms) => match ms {
-            MatchStatus::Match((next_input, result)) => f(result).parse(next_input),
-            MatchStatus::NoMatch(last_input) => Ok(MatchStatus::NoMatch(last_input)),
+        Ok(sms) => match (sms.as_span(), sms.unwrap()) {
+            (span, MatchStatus::Match((next_input, result))) => f(result).parse(next_input),
+
+            (span, MatchStatus::NoMatch(last_input)) => Ok(SpannedMatchStatus::new(
+                span,
+                MatchStatus::NoMatch(last_input),
+            )),
         },
         Err(e) => Err(e),
     }
@@ -1022,16 +1068,26 @@ where
     P2: Parser<'a, A, C>,
 {
     move |input| match first.parse(input) {
-        Ok(ms) => match ms {
-            MatchStatus::Match((next_input, result)) => {
+        Ok(sms) => match (sms.as_span(), sms.unwrap()) {
+            (span, MatchStatus::Match((next_input, result))) => {
                 let first_input = next_input;
-                if let Ok(MatchStatus::Match(_)) = second.parse(next_input) {
-                    Ok(MatchStatus::Match((first_input, result)))
+                if let Ok(SpannedMatchStatus {
+                    span: span,
+                    match_status: MatchStatus::Match(_),
+                }) = second.parse(next_input)
+                {
+                    Ok(SpannedMatchStatus::new(
+                        span,
+                        MatchStatus::Match((first_input, result)),
+                    ))
                 } else {
-                    Ok(MatchStatus::NoMatch(input))
+                    Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input)))
                 }
             }
-            MatchStatus::NoMatch(last_input) => Ok(MatchStatus::NoMatch(last_input)),
+            (_, MatchStatus::NoMatch(last_input)) => Ok(SpannedMatchStatus::new(
+                None,
+                MatchStatus::NoMatch(last_input),
+            )),
         },
         Err(e) => Err(e),
     }
@@ -1089,10 +1145,16 @@ where
 {
     move |mut input| {
         let mut res_cnt = 0;
+        let mut span_acc: Vec<Span> = Vec::new();
         let mut result_acc: Vec<B> = Vec::new();
-        while let Ok(MatchStatus::Match((next_input, result))) = parser.parse(input) {
+        while let Ok(SpannedMatchStatus {
+            span: Some(span),
+            match_status: MatchStatus::Match((next_input, result)),
+        }) = parser.parse(input)
+        {
             if res_cnt < n {
                 input = next_input;
+                span_acc.push(span);
                 result_acc.push(result);
                 res_cnt += 1;
             } else {
@@ -1101,9 +1163,16 @@ where
         }
 
         if res_cnt > 0 {
-            Ok(MatchStatus::Match((input, result_acc)))
+            // these are safe to unwrap due to the res_cnt gate.
+            let start = span_acc.first().unwrap().start;
+            let end = span_acc.first().unwrap().end;
+
+            Ok(SpannedMatchStatus::new(
+                Some(start..end),
+                MatchStatus::Match((input, result_acc)),
+            ))
         } else {
-            Ok(MatchStatus::NoMatch(input))
+            Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input)))
         }
     }
 }
@@ -1161,12 +1230,18 @@ where
 {
     move |input| {
         let mut ni: A = input;
-        let mut res_cnt = 0;
-        let mut result_acc: Vec<B> = Vec::new();
 
-        while let Ok(MatchStatus::Match((next_input, result))) = parser.parse(ni) {
+        let mut res_cnt = 0;
+        let mut span_acc: Vec<Span> = Vec::new();
+        let mut result_acc: Vec<B> = Vec::new();
+        while let Ok(SpannedMatchStatus {
+            span: Some(span),
+            match_status: MatchStatus::Match((next_input, result)),
+        }) = parser.parse(ni)
+        {
             if res_cnt < n {
                 ni = next_input;
+                span_acc.push(span);
                 result_acc.push(result);
                 res_cnt += 1;
             } else {
@@ -1175,9 +1250,16 @@ where
         }
 
         if res_cnt == n {
-            Ok(MatchStatus::Match((ni, result_acc)))
+            // these are safe to unwrap due to the res_cnt gate.
+            let start = span_acc.first().unwrap().start;
+            let end = span_acc.first().unwrap().end;
+
+            Ok(SpannedMatchStatus::new(
+                Some(start..end),
+                MatchStatus::Match((ni, result_acc)),
+            ))
         } else {
-            Ok(MatchStatus::NoMatch(input))
+            Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input)))
         }
     }
 }
@@ -1239,12 +1321,19 @@ where
     F: Fn(&B) -> bool,
 {
     move |input| {
-        if let Ok(MatchStatus::Match((next_input, value))) = parser.parse(input) {
+        if let Ok(SpannedMatchStatus {
+            span: Some(span),
+            match_status: MatchStatus::Match((next_input, value)),
+        }) = parser.parse(input)
+        {
             if pred_case(&value) {
-                return Ok(MatchStatus::Match((next_input, value)));
+                return Ok(SpannedMatchStatus::new(
+                    Some(span),
+                    MatchStatus::Match((next_input, value)),
+                ));
             }
         }
-        Ok(MatchStatus::NoMatch(input))
+        Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input)))
     }
 }
 
@@ -1298,13 +1387,33 @@ where
     P: Parser<'a, A, B>,
 {
     move |mut input| {
+        let mut span_acc: Vec<Span> = Vec::new();
         let mut result_acc: Vec<B> = Vec::new();
-        while let Ok(MatchStatus::Match((next_input, result))) = parser.parse(input) {
+
+        while let Ok(SpannedMatchStatus {
+            span: Some(span),
+            match_status: MatchStatus::Match((next_input, result)),
+        }) = parser.parse(input)
+        {
             input = next_input;
+            span_acc.push(span);
             result_acc.push(result);
         }
 
-        Ok(MatchStatus::Match((input, result_acc)))
+        if result_acc.len() > 0 {
+            let start = span_acc.first().unwrap().start;
+            let end = span_acc.last().unwrap().end;
+
+            Ok(SpannedMatchStatus::new(
+                Some(start..end),
+                MatchStatus::Match((input, result_acc)),
+            ))
+        } else {
+            Ok(SpannedMatchStatus::new(
+                None,
+                MatchStatus::Match((input, result_acc)),
+            ))
+        }
     }
 }
 
@@ -1358,16 +1467,29 @@ where
     P: Parser<'a, A, B>,
 {
     move |mut input| {
+        let mut span_acc: Vec<Span> = Vec::new();
         let mut result_acc: Vec<B> = Vec::new();
-        while let Ok(MatchStatus::Match((next_input, result))) = parser.parse(input) {
+
+        while let Ok(SpannedMatchStatus {
+            span: Some(span),
+            match_status: MatchStatus::Match((next_input, result)),
+        }) = parser.parse(input)
+        {
             input = next_input;
+            span_acc.push(span);
             result_acc.push(result);
         }
 
-        if result_acc.is_empty() {
-            Ok(MatchStatus::NoMatch(input))
+        if result_acc.len() > 0 {
+            let start = span_acc.first().unwrap().start;
+            let end = span_acc.last().unwrap().end;
+
+            Ok(SpannedMatchStatus::new(
+                Some(start..end),
+                MatchStatus::Match((input, result_acc)),
+            ))
         } else {
-            Ok(MatchStatus::Match((input, result_acc)))
+            Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input)))
         }
     }
 }
@@ -1423,10 +1545,20 @@ where
     P: Parser<'a, A, B>,
 {
     move |input| match parser.parse(input) {
-        Ok(MatchStatus::Match((next_input, res))) => {
-            Ok(MatchStatus::Match((next_input, Some(res))))
-        }
-        Ok(MatchStatus::NoMatch(last_input)) => Ok(MatchStatus::Match((last_input, None))),
+        Ok(SpannedMatchStatus {
+            span: Some(span),
+            match_status: MatchStatus::Match((next_input, res)),
+        }) => Ok(SpannedMatchStatus::new(
+            Some(span),
+            MatchStatus::Match((next_input, Some(res))),
+        )),
+        Ok(SpannedMatchStatus {
+            span: span,
+            match_status: MatchStatus::NoMatch(last_input),
+        }) => Ok(SpannedMatchStatus::new(
+            span,
+            MatchStatus::Match((last_input, None)),
+        )),
         Err(e) => Err(e),
     }
 }
@@ -1466,13 +1598,23 @@ where
     move |input| {
         parser1
             .parse(input)
-            .and_then(|match_status| match match_status {
-                MatchStatus::NoMatch(_) => Ok(MatchStatus::NoMatch(input)),
-                MatchStatus::Match((p1_input, result1)) => {
-                    parser2.parse(p1_input).map(|p2_ms| match p2_ms {
-                        MatchStatus::NoMatch(_) => MatchStatus::NoMatch(input),
-                        MatchStatus::Match((p2_input, result2)) => {
-                            MatchStatus::Match((p2_input, (result1, result2)))
+            .and_then(|sms| match (sms.as_span(), sms.unwrap()) {
+                (_, MatchStatus::NoMatch(_)) => {
+                    Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input)))
+                }
+                (span, MatchStatus::Match((p1_input, result1))) => {
+                    parser2.parse(p1_input).map(|p2_sms| {
+                        match (p2_sms.as_span(), p2_sms.unwrap()) {
+                            (_, MatchStatus::NoMatch(_)) => {
+                                SpannedMatchStatus::new(None, MatchStatus::NoMatch(input))
+                            }
+                            (None, _) => SpannedMatchStatus::new(None, MatchStatus::NoMatch(input)),
+                            (Some(span), MatchStatus::Match((p2_input, result2))) => {
+                                SpannedMatchStatus::new(
+                                    Some(span),
+                                    MatchStatus::Match((p2_input, (result1, result2))),
+                                )
+                            }
                         }
                     })
                 }
