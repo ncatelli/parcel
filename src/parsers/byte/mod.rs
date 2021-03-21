@@ -13,7 +13,7 @@ use crate::prelude::v1::*;
 ///     .enumerate()
 ///     .collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00},
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
 ///   expect_byte(0x00).parse(&input)
 /// );
 /// ```
@@ -55,7 +55,7 @@ pub fn expect_byte<'a>(expected: u8) -> impl Parser<'a, &'a [(usize, u8)], u8> {
 ///     .enumerate()
 ///     .collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00},
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
 ///   any_byte().parse(&input)
 /// );
 /// ```

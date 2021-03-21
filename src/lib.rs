@@ -32,13 +32,13 @@ impl<U, T> MatchStatus<U, T> {
     /// # Examples
     ///
     /// ```
-    /// let input = vec!['a'];
-    /// let v = parcel::MatchStatus::Match((&input[1..], 'a'));
+    /// let input: Vec<(usize, char)> = vec!['a'].into_iter().enumerate().collect();
+    /// let v = parcel::MatchStatus::<&[char], char>::Match{span: 0..1, remainder: &input[1..], inner: 'a'};
     /// assert_eq!(v.unwrap(), 'a');
     /// ```
     ///
     /// ```{.should_panic}
-    /// let input = vec!['a'];
+    /// let input: Vec<(usize, char)> = vec!['a'].into_iter().enumerate().collect();
     /// let v = parcel::MatchStatus::<&[char], char>::NoMatch(&input);
     /// assert_eq!(v.unwrap(), 'a');
     /// ```
@@ -62,7 +62,7 @@ impl<U, T> MatchStatus<U, T> {
     /// # Examples
     ///
     /// ```
-    /// let input = vec!['a'];
+    /// let input: Vec<(usize, char)> = vec!['a'].into_iter().enumerate().collect();
     /// let v = parcel::MatchStatus::NoMatch(&input);
     /// assert_eq!(v.unwrap_or('b'), 'b');
     /// ```
@@ -82,7 +82,7 @@ impl<U, T> MatchStatus<U, T> {
     /// # Examples
     ///
     /// ```
-    /// let input = vec!['a'];
+    /// let input: Vec<(usize, char)> = vec!['a'].into_iter().enumerate().collect();
     /// let v = parcel::MatchStatus::NoMatch(&input);
     /// assert_eq!(v.unwrap_or_else(|| 'b'), 'b');
     /// ```
@@ -100,6 +100,15 @@ impl<U, T> MatchStatus<U, T> {
         }
     }
 
+    /// Returns the contained Span on a `Match` value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let input: Vec<(usize, char)> = vec!['a'].into_iter().enumerate().collect();
+    /// let v = parcel::MatchStatus::<&[char], char>::Match{span: 0..1, remainder: &input[1..], inner: 'a'};
+    /// assert_eq!(v.as_span(), 0..1);
+    /// ```
     pub fn as_span(&self) -> Option<Span> {
         match self {
             Self::Match {
@@ -137,9 +146,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
     ///   expect_character('b').or(|| expect_character('a')).parse(&input)
     /// );
     /// ```
@@ -147,9 +156,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[1..], 0x00))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
     ///   expect_byte(0x01).or(|| expect_byte(0x00)).parse(&input)
     /// );
     /// ```
@@ -173,21 +182,17 @@ pub trait Parser<'a, Input, Output> {
     /// use parcel::parsers::character::expect_character;
     /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(SpannedMatchStatus{
-    ///     span: Some(0..2),
-    ///     match_status: MatchStatus::Match((&input[2..], 'b'))
-    ///   }),
-    ///   expect_character('a')
-    ///       .and_then(|_| expect_character('b')).parse(&input)
+    ///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: 'b'}),
+    ///   expect_character('a').and_then(|| expect_character('b')).parse(&input)
     /// );
     /// ```
     ///
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], "ab".to_string()))),
+    ///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: 'ab'.to_string()}),
     ///   expect_character('a').and_then(
     ///       |first_match| expect_character('b').map(move |second_match| {
     ///          format!("{}{}", first_match, second_match)
@@ -198,9 +203,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], 0x01))),
+    ///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: 0x01}),
     ///   expect_byte(0x00).and_then(|_| expect_byte(0x01)).parse(&input)
     /// );
     /// ```
@@ -208,16 +213,15 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], "01".to_string()))),
+    ///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: "01".to_string()}),
     ///   expect_byte(0x00).and_then(
     ///       |first_match| expect_byte(0x01).map(move |second_match| {
     ///          format!("{}{}", first_match, second_match)
     ///       })).parse(&input)
     /// );
     /// ```
-
     fn and_then<F, NextParser, NewOutput>(self, thunk: F) -> BoxedParser<'a, Input, NewOutput>
     where
         Self: Sized + 'a,
