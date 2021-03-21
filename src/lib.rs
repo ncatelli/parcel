@@ -14,27 +14,6 @@ use std::borrow::Borrow;
 
 pub type Span = std::ops::Range<usize>;
 
-/// SpannedMatchStatus stores an offset of a matching pattern along with it's corresponding match.
-#[derive(Debug, Clone, PartialEq)]
-pub struct SpannedMatchStatus<U, T> {
-    span: Option<Span>,
-    match_status: MatchStatus<U, T>,
-}
-
-impl<U, T> SpannedMatchStatus<U, T> {
-    pub fn new(span: Option<Span>, match_status: MatchStatus<U, T>) -> Self {
-        Self { span, match_status }
-    }
-
-    pub fn as_span(&self) -> Option<Span> {
-        self.span.clone()
-    }
-
-    pub fn unwrap(self) -> MatchStatus<U, T> {
-        self.match_status
-    }
-}
-
 /// MatchStatus represents a non-error parser result with two cases, signifying
 /// whether the parse returned a match or not.
 #[derive(Debug, PartialEq, Clone)]
