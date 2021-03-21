@@ -993,7 +993,7 @@ where
 {
     move |input| match parser.parse(input) {
         Ok(sms) => match (sms.as_span(), sms.unwrap()) {
-            (span, MatchStatus::Match((next_input, result))) => f(result).parse(next_input),
+            (_, MatchStatus::Match((next_input, result))) => f(result).parse(next_input),
 
             (span, MatchStatus::NoMatch(last_input)) => Ok(SpannedMatchStatus::new(
                 span,
@@ -1072,7 +1072,7 @@ where
             (span, MatchStatus::Match((next_input, result))) => {
                 let first_input = next_input;
                 if let Ok(SpannedMatchStatus {
-                    span: span,
+                    span: _,
                     match_status: MatchStatus::Match(_),
                 }) = second.parse(next_input)
                 {
@@ -1165,7 +1165,7 @@ where
         if res_cnt > 0 {
             // these are safe to unwrap due to the res_cnt gate.
             let start = span_acc.first().unwrap().start;
-            let end = span_acc.first().unwrap().end;
+            let end = span_acc.last().unwrap().end;
 
             Ok(SpannedMatchStatus::new(
                 Some(start..end),
@@ -1252,7 +1252,7 @@ where
         if res_cnt == n {
             // these are safe to unwrap due to the res_cnt gate.
             let start = span_acc.first().unwrap().start;
-            let end = span_acc.first().unwrap().end;
+            let end = span_acc.last().unwrap().end;
 
             Ok(SpannedMatchStatus::new(
                 Some(start..end),
@@ -1552,8 +1552,16 @@ where
             Some(span),
             MatchStatus::Match((next_input, Some(res))),
         )),
+
         Ok(SpannedMatchStatus {
-            span: span,
+            span: None,
+            match_status: MatchStatus::Match((next_input, res)),
+        }) => Ok(SpannedMatchStatus::new(
+            None,
+            MatchStatus::Match((next_input, Some(res))),
+        )),
+        Ok(SpannedMatchStatus {
+            span,
             match_status: MatchStatus::NoMatch(last_input),
         }) => Ok(SpannedMatchStatus::new(
             span,
@@ -1602,7 +1610,7 @@ where
                 (_, MatchStatus::NoMatch(_)) => {
                     Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input)))
                 }
-                (span, MatchStatus::Match((p1_input, result1))) => {
+                (_, MatchStatus::Match((p1_input, result1))) => {
                     parser2.parse(p1_input).map(|p2_sms| {
                         match (p2_sms.as_span(), p2_sms.unwrap()) {
                             (_, MatchStatus::NoMatch(_)) => {
