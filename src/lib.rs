@@ -32,13 +32,13 @@ impl<U, T> MatchStatus<U, T> {
     /// # Examples
     ///
     /// ```
-    /// let input: Vec<(usize, char)> = vec!['a'].into_iter().enumerate().collect();
+    /// let input = vec!['a'];
     /// let v = parcel::MatchStatus::<&[char], char>::Match{span: 0..1, remainder: &input[1..], inner: 'a'};
     /// assert_eq!(v.unwrap(), 'a');
     /// ```
     ///
     /// ```{.should_panic}
-    /// let input: Vec<(usize, char)> = vec!['a'].into_iter().enumerate().collect();
+    /// let input = vec!['a'];
     /// let v = parcel::MatchStatus::<&[char], char>::NoMatch(&input);
     /// assert_eq!(v.unwrap(), 'a');
     /// ```
@@ -62,7 +62,7 @@ impl<U, T> MatchStatus<U, T> {
     /// # Examples
     ///
     /// ```
-    /// let input: Vec<(usize, char)> = vec!['a'].into_iter().enumerate().collect();
+    /// let input = vec!['a'];
     /// let v = parcel::MatchStatus::NoMatch(&input);
     /// assert_eq!(v.unwrap_or('b'), 'b');
     /// ```
@@ -82,7 +82,7 @@ impl<U, T> MatchStatus<U, T> {
     /// # Examples
     ///
     /// ```
-    /// let input: Vec<(usize, char)> = vec!['a'].into_iter().enumerate().collect();
+    /// let input = vec!['a'];
     /// let v = parcel::MatchStatus::NoMatch(&input);
     /// assert_eq!(v.unwrap_or_else(|| 'b'), 'b');
     /// ```
@@ -105,9 +105,9 @@ impl<U, T> MatchStatus<U, T> {
     /// # Examples
     ///
     /// ```
-    /// let input: Vec<(usize, char)> = vec!['a'].into_iter().enumerate().collect();
+    /// let input = vec!['a'];
     /// let v = parcel::MatchStatus::<&[char], char>::Match{span: 0..1, remainder: &input[1..], inner: 'a'};
-    /// assert_eq!(v.as_span(), 0..1);
+    /// assert_eq!(v.as_span(), Some(0..1));
     /// ```
     pub fn as_span(&self) -> Option<Span> {
         match self {
@@ -183,7 +183,7 @@ pub trait Parser<'a, Input, Output> {
     /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
     ///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: 'b'}),
-    ///   expect_character('a').and_then(|| expect_character('b')).parse(&input)
+    ///   expect_character('a').and_then(|_| expect_character('b')).parse(&input)
     /// );
     /// ```
     ///
@@ -192,7 +192,7 @@ pub trait Parser<'a, Input, Output> {
     /// use parcel::parsers::character::expect_character;
     /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: 'ab'.to_string()}),
+    ///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: "ab".to_string()}),
     ///   expect_character('a').and_then(
     ///       |first_match| expect_character('b').map(move |second_match| {
     ///          format!("{}{}", first_match, second_match)
@@ -243,9 +243,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///     Ok(MatchStatus::Match((&input[1..], 'a'))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
     ///     expect_character('a')
     ///         .peek_next(expect_character('b'))
     ///         .parse(&input[0..])
@@ -255,7 +255,7 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
     ///     Ok(MatchStatus::NoMatch(&input[0..])),
     ///     expect_character('a')
@@ -267,9 +267,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///     Ok(MatchStatus::Match((&input[1..], 0x00))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
     ///     expect_byte(0x00)
     ///         .peek_next(expect_byte(0x01))
     ///         .parse(&input[0..])
@@ -279,7 +279,7 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
     /// assert_eq!(
     ///     Ok(MatchStatus::NoMatch(&input[0..])),
     ///     expect_byte(0x00)
@@ -307,9 +307,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'a', 'a'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'a', 'a'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'a']}),
     ///   expect_character('a').take_until_n(2).parse(&input)
     /// );
     /// ```
@@ -317,9 +317,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[1..], vec!['a']))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: vec!['a']}),
     ///   expect_character('a').take_until_n(2).parse(&input)
     /// );
     /// ```
@@ -327,9 +327,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x00, 0x00];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x00].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x00]}),
     ///   expect_byte(0x00).take_until_n(2).parse(&input)
     /// );
     /// ```
@@ -337,9 +337,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[1..], vec![0x00]))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: vec![0x00]}),
     ///   expect_byte(0x00).take_until_n(2).parse(&input)
     /// );
     /// ```
@@ -362,9 +362,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'a', 'a'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'a', 'a'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'a']}),
     ///   expect_character('a').take_n(2).parse(&input)
     /// );
     /// ```
@@ -372,7 +372,7 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
     ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
     ///   expect_character('a').take_n(2).parse(&input)
@@ -382,9 +382,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x00, 0x00];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x00].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x00]}),
     ///   expect_byte(0x00).take_n(2).parse(&input)
     /// );
     /// ```
@@ -392,7 +392,7 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
     /// assert_eq!(
     ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
     ///   expect_byte(0x00).take_n(2).parse(&input)
@@ -417,9 +417,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::any_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
     ///   any_character().predicate(|&c| c != 'c').parse(&input)
     /// );
     /// ```
@@ -427,9 +427,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::any_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'b']))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'b']}),
     ///   parcel::one_or_more(
     ///       any_character().predicate(|&c| c != 'c')
     ///   ).parse(&input)
@@ -439,9 +439,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::any_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[1..], 0x00))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
     ///   any_byte().predicate(|&b| b != 0x02).parse(&input)
     /// );
     /// ```
@@ -449,9 +449,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::any_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x01]))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x01]}),
     ///   parcel::one_or_more(
     ///       any_byte().predicate(|&b| b != 0x02)
     ///   ).parse(&input)
@@ -475,9 +475,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'a', 'b'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'a', 'b'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'a']}),
     ///   expect_character('a').zero_or_more().parse(&input)
     /// );
     /// ```
@@ -485,9 +485,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[0..], vec![]))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..0, remainder: &input[0..], inner: vec![]}),
     ///   expect_character('c').zero_or_more().parse(&input)
     /// );
     /// ```
@@ -495,9 +495,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x00, 0x01];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x01].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x00]}),
     ///   expect_byte(0x00).zero_or_more().parse(&input)
     /// );
     /// ```
@@ -505,9 +505,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[0..], vec![]))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..0, remainder: &input[0..], inner: vec![]}),
     ///   expect_byte(0x02).zero_or_more().parse(&input)
     /// );
     /// ```
@@ -528,9 +528,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'a', 'b'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'a', 'b'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'a']}),
     ///   expect_character('a').one_or_more().parse(&input)
     /// );
     /// ```
@@ -538,7 +538,7 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
     ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
     ///   expect_character('c').one_or_more().parse(&input)
@@ -548,9 +548,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x00, 0x01];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x01].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x00]}),
     ///   expect_byte(0x00).one_or_more().parse(&input)
     /// );
     /// ```
@@ -558,7 +558,7 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x01].into_iter().enumerate().collect();
     /// assert_eq!(
     ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
     ///   expect_byte(0x02).one_or_more().parse(&input)
@@ -581,9 +581,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'a', 'b'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[1..], "a".to_string()))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: "a".to_string()}),
     ///   expect_character('a').map(
     ///       |res| format!("{}", res)
     ///   ).parse(&input)
@@ -593,9 +593,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[1..], "0".to_string()))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: "0".to_string()}),
     ///   expect_byte(0x00).map(
     ///       |res| format!("{}", res)
     ///   ).parse(&input)
@@ -621,7 +621,7 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
     ///   Ok(parcel::MatchStatus::NoMatch(&input[1..])),
     ///   expect_character('a').skip().parse(&input)
@@ -631,7 +631,7 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
     /// assert_eq!(
     ///   Ok(parcel::MatchStatus::NoMatch(&input[1..])),
     ///   expect_byte(0x00).skip().parse(&input)
@@ -655,9 +655,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[1..], Some('a')))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: Some('a')}),
     ///   expect_character('a').optional().parse(&input)
     /// );
     /// ```
@@ -665,9 +665,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[0..], None))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..0, remainder: &input[0..], inner: None}),
     ///   expect_character('c').optional().parse(&input)
     /// );
     /// ```
@@ -675,9 +675,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[1..], Some(0x00)))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: Some(0x00)}),
     ///   expect_byte(0x00).optional().parse(&input)
     /// );
     /// ```
@@ -685,9 +685,9 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::byte::expect_byte;
-    /// let input = vec![0x00, 0x01, 0x02];
+    /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[0..], None))),
+    ///   Ok(parcel::MatchStatus::Match{span: 0..0, remainder: &input[0..], inner: None}),
     ///   expect_byte(0x02).optional().parse(&input)
     /// );
     /// ```
@@ -748,9 +748,9 @@ impl<'a, Input, Output> Parser<'a, Input, Output> for BoxedParser<'a, Input, Out
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
 ///   parcel::or(expect_character('b'), || expect_character('a')).parse(&input)
 /// );
 /// ```
@@ -758,9 +758,9 @@ impl<'a, Input, Output> Parser<'a, Input, Output> for BoxedParser<'a, Input, Out
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], 0x00))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
 ///   parcel::or(expect_byte(0x01), || expect_byte(0x00)).parse(&input)
 /// );
 /// ```
@@ -803,10 +803,10 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// let parsers = vec![expect_character('b'), expect_character('c'), expect_character('a')];
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
 ///   parcel::one_of(parsers).parse(&input)
 /// );
 /// ```
@@ -814,10 +814,10 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// let parsers = vec![expect_byte(0x01), expect_byte(0x02), expect_byte(0x00)];
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], 0x00))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
 ///   parcel::one_of(parsers).parse(&input)
 /// );
 /// ```
@@ -855,9 +855,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], "a".to_string()))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: "a".to_string()}),
 ///   parcel::map(
 ///       expect_character('a'),
 ///       |res| format!("{}", res)
@@ -868,9 +868,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], "0".to_string()))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: "0".to_string()}),
 ///   parcel::map(
 ///       expect_byte(0x00),
 ///       |res| format!("{}", res)
@@ -906,7 +906,7 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::NoMatch(&input[1..])),
 ///   parcel::skip(expect_character('a')).parse(&input)
@@ -916,7 +916,7 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::NoMatch(&input[1..])),
 ///   parcel::skip(expect_byte(0x00)).parse(&input)
@@ -946,9 +946,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], 'b'))),
+///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: 'b'}),
 ///   parcel::and_then(
 ///       expect_character('a'),
 ///       |_| expect_character('b'),
@@ -959,9 +959,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], "ab".to_string()))),
+///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: "ab".to_string()}),
 ///   parcel::and_then(
 ///       expect_character('a'),
 ///       |first_match| expect_character('b').map(move |second_match| {
@@ -973,9 +973,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], 0x01))),
+///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: 0x01}),
 ///   parcel::and_then(
 ///       expect_byte(0x00),
 ///       |_| expect_byte(0x01),
@@ -986,9 +986,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], "01".to_string()))),
+///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: "01".to_string()}),
 ///   parcel::and_then(
 ///       expect_byte(0x00),
 ///       |first_match| expect_byte(0x01).map(move |second_match| {
@@ -1026,9 +1026,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
 ///   parcel::peek_next(
 ///       expect_character('a'),
 ///       expect_character('b'),
@@ -1039,7 +1039,7 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
 ///   parcel::peek_next(
@@ -1052,9 +1052,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], 0x00))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
 ///   parcel::peek_next(
 ///       expect_byte(0x00),
 ///       expect_byte(0x01),
@@ -1065,7 +1065,7 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
 ///   parcel::peek_next(
@@ -1118,9 +1118,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'a', 'a'];
+/// let input: Vec<(usize, char)> = vec!['a', 'a', 'a'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'a']}),
 ///   parcel::take_until_n(expect_character('a'), 2).parse(&input)
 /// );
 /// ```
@@ -1128,9 +1128,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], vec!['a']))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: vec!['a']}),
 ///   parcel::take_until_n(expect_character('a'), 2).parse(&input)
 /// );
 /// ```
@@ -1138,9 +1138,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x00, 0x00];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x00].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x00]}),
 ///   parcel::take_until_n(expect_byte(0x00), 2).parse(&input)
 /// );
 /// ```
@@ -1149,8 +1149,9 @@ where
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
 /// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], vec![0x00]))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: vec![0x00]}),
 ///   parcel::take_until_n(expect_byte(0x00), 2).parse(&input)
 /// );
 /// ```
@@ -1205,9 +1206,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'a', 'a'];
+/// let input: Vec<(usize, char)> = vec!['a', 'a', 'a'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'a']}),
 ///   parcel::take_n(expect_character('a'), 2).parse(&input)
 /// );
 /// ```
@@ -1215,7 +1216,7 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
 ///   parcel::take_n(expect_character('a'), 2).parse(&input)
@@ -1225,9 +1226,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x00, 0x00];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x00].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x00]}),
 ///   parcel::take_n(expect_byte(0x00), 2).parse(&input)
 /// );
 /// ```
@@ -1235,7 +1236,7 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
 ///   parcel::take_n(expect_byte(0x00), 2).parse(&input)
@@ -1294,9 +1295,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::any_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], 'a'))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
 ///   parcel::predicate(any_character(), |&c| c != 'c').parse(&input)
 /// );
 /// ```
@@ -1304,9 +1305,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::any_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'b']))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'b']}),
 ///   parcel::one_or_more(
 ///       parcel::predicate(any_character(), |&c| c != 'c')
 ///   ).parse(&input)
@@ -1316,9 +1317,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::any_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], 0x00))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
 ///   parcel::predicate(any_byte(), |&b| b != 0x02).parse(&input)
 /// );
 /// ```
@@ -1326,9 +1327,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::any_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x01]))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x01]}),
 ///   parcel::one_or_more(
 ///       parcel::predicate(any_byte(), |&b| b != 0x02)
 ///   ).parse(&input)
@@ -1367,9 +1368,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'a', 'b'];
+/// let input: Vec<(usize, char)> = vec!['a', 'a', 'b'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'a']}),
 ///   parcel::zero_or_more(expect_character('a')).parse(&input)
 /// );
 /// ```
@@ -1377,9 +1378,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[0..], vec![]))),
+///   Ok(parcel::MatchStatus::Match{span: 0..0, remainder: &input[0..], inner: vec![]}),
 ///   parcel::zero_or_more(expect_character('c')).parse(&input)
 /// );
 /// ```
@@ -1387,9 +1388,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x00, 0x01];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x01].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x00]}),
 ///   parcel::zero_or_more(expect_byte(0x00)).parse(&input)
 /// );
 /// ```
@@ -1397,9 +1398,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[0..], vec![]))),
+///   Ok(parcel::MatchStatus::Match{span: 0..0, remainder: &input[0..], inner: vec![]}),
 ///   parcel::zero_or_more(expect_byte(0x02)).parse(&input)
 /// );
 /// ```
@@ -1450,9 +1451,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'a', 'b'];
+/// let input: Vec<(usize, char)> = vec!['a', 'a', 'b'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], vec!['a', 'a']))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'a']}),
 ///   parcel::one_or_more(expect_character('a')).parse(&input)
 /// );
 /// ```
@@ -1460,7 +1461,7 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
 ///   parcel::one_or_more(expect_character('c')).parse(&input)
@@ -1470,9 +1471,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x00, 0x01];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x01].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x00]}),
 ///   parcel::one_or_more(expect_byte(0x00)).parse(&input)
 /// );
 /// ```
@@ -1480,7 +1481,7 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
 ///   parcel::one_or_more(expect_byte(0x02)).parse(&input)
@@ -1530,9 +1531,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], Some('a')))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: Some('a')}),
 ///   parcel::optional(expect_character('a')).parse(&input)
 /// );
 /// ```
@@ -1540,9 +1541,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[0..], None))),
+///   Ok(parcel::MatchStatus::Match{span: 0..0, remainder: &input[0..], inner: None}),
 ///   parcel::optional(expect_character('c')).parse(&input)
 /// );
 /// ```
@@ -1550,9 +1551,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], Some(0x00)))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: Some(0x00)}),
 ///   parcel::optional(expect_byte(0x00)).parse(&input)
 /// );
 /// ```
@@ -1560,9 +1561,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[0..], None))),
+///   Ok(parcel::MatchStatus::Match{span: 0..0, remainder: &input[0..], inner: None}),
 ///   parcel::optional(expect_byte(0x02)).parse(&input)
 /// );
 /// ```
@@ -1600,9 +1601,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], ('a', 'b')))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: ('a', 'b')}),
 ///   parcel::join(expect_character('a'), expect_character('b')).parse(&input)
 /// );
 /// ```
@@ -1610,9 +1611,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], (0x00, 0x01)))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: (0x00, 0x01)}),
 ///   parcel::join(expect_byte(0x00), expect_byte(0x01)).parse(&input)
 /// );
 /// ```
@@ -1653,9 +1654,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], 'a'))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: 'a'}),
 ///   parcel::left(
 ///       parcel::join(
 ///           expect_character('a'),
@@ -1668,9 +1669,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], 0x00))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: 0x00}),
 ///   parcel::left(
 ///       parcel::join(
 ///           expect_byte(0x00),
@@ -1697,9 +1698,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
-/// let input = vec!['a', 'b', 'c'];
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], 'b'))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: 'b'}),
 ///   parcel::right(
 ///       parcel::join(
 ///           expect_character('a'),
@@ -1712,9 +1713,9 @@ where
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[2..], 0x01))),
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: 0x01}),
 ///   parcel::right(
 ///       parcel::join(
 ///           expect_byte(0x00),
