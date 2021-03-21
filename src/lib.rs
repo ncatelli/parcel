@@ -1424,7 +1424,7 @@ where
             result_acc.push(inner);
         }
 
-        if result_acc.len() > 0 {
+        if !result_acc.is_empty() {
             let start = span_acc.first().unwrap().start;
             let end = span_acc.last().unwrap().end;
 
@@ -1507,7 +1507,7 @@ where
             result_acc.push(inner);
         }
 
-        if result_acc.len() > 0 {
+        if !result_acc.is_empty() {
             let start = span_acc.first().unwrap().start;
             let end = span_acc.last().unwrap().end;
 
