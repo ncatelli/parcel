@@ -169,9 +169,12 @@ pub trait Parser<'a, Input, Output> {
     /// ```
     /// use parcel::prelude::v1::*;
     /// use parcel::parsers::character::expect_character;
-    /// let input = vec!['a', 'b', 'c'];
+    /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
     /// assert_eq!(
-    ///   Ok(parcel::MatchStatus::Match((&input[2..], 'b'))),
+    ///   Ok(SpannedMatchStatus{
+    ///     span: Some(0..2),
+    ///     match_status: MatchStatus::Match((&input[2..], 'b'))
+    ///   }),
     ///   expect_character('a')
     ///       .and_then(|_| expect_character('b')).parse(&input)
     /// );
