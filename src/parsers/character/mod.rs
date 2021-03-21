@@ -26,11 +26,12 @@ use crate::prelude::v1::*;
 /// ```
 pub fn expect_character<'a>(expected: char) -> impl Parser<'a, &'a [(usize, char)], char> {
     move |input: &'a [(usize, char)]| match input.get(0) {
-        Some(&(pos, next)) if next == expected => Ok(SpannedMatchStatus::new(
-            Some(pos..pos + 1),
-            MatchStatus::Match((&input[1..], next)),
-        )),
-        _ => Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input))),
+        Some(&(pos, next)) if next == expected => Ok(MatchStatus::Match {
+            span: pos..pos + 1,
+            remainder: &input[1..],
+            inner: next,
+        }),
+        _ => Ok(MatchStatus::NoMatch(input)),
     }
 }
 
@@ -61,11 +62,12 @@ pub fn expect_character<'a>(expected: char) -> impl Parser<'a, &'a [(usize, char
 /// ```
 pub fn any_character<'a>() -> impl Parser<'a, &'a [(usize, char)], char> {
     move |input: &'a [(usize, char)]| match input.get(0) {
-        Some(&(pos, next)) => Ok(SpannedMatchStatus::new(
-            Some(pos..pos + 1),
-            MatchStatus::Match((&input[1..], next)),
-        )),
-        _ => Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input))),
+        Some(&(pos, next)) => Ok(MatchStatus::Match {
+            span: pos..pos + 1,
+            remainder: &input[1..],
+            inner: next,
+        }),
+        _ => Ok(MatchStatus::NoMatch(input)),
     }
 }
 
@@ -107,11 +109,12 @@ pub fn any_character<'a>() -> impl Parser<'a, &'a [(usize, char)], char> {
 /// ```
 pub fn any_non_whitespace_character<'a>() -> impl Parser<'a, &'a [(usize, char)], char> {
     move |input: &'a [(usize, char)]| match input.get(0) {
-        Some(&(pos, next)) if !next.is_whitespace() => Ok(SpannedMatchStatus::new(
-            Some(pos..pos + 1),
-            MatchStatus::Match((&input[1..], next)),
-        )),
-        _ => Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input))),
+        Some(&(pos, next)) if !next.is_whitespace() => Ok(MatchStatus::Match {
+            span: pos..pos + 1,
+            remainder: &input[1..],
+            inner: next,
+        }),
+        _ => Ok(MatchStatus::NoMatch(input)),
     }
 }
 
@@ -147,15 +150,13 @@ pub fn expect_str<'a>(expected: &'static str) -> impl Parser<'a, &'a [(usize, ch
         let expected_end = start_pos + expected_len;
         let next: String = input.iter().take(expected_len).map(|elem| elem.1).collect();
         if next == expected {
-            Ok(SpannedMatchStatus::new(
-                Some(start_pos..expected_end),
-                MatchStatus::Match((&input[expected_len..], next)),
-            ))
+            Ok(MatchStatus::Match {
+                span: start_pos..expected_end,
+                remainder: &input[expected_len..],
+                inner: next,
+            })
         } else {
-            Ok(SpannedMatchStatus::new(
-                None,
-                MatchStatus::NoMatch(preparse_input),
-            ))
+            Ok(MatchStatus::NoMatch(preparse_input))
         }
     }
 }
@@ -270,11 +271,12 @@ pub fn tab<'a>() -> impl Parser<'a, &'a [(usize, char)], char> {
 /// ```
 pub fn whitespace<'a>() -> impl Parser<'a, &'a [(usize, char)], char> {
     move |input: &'a [(usize, char)]| match input.get(0) {
-        Some(&(pos, next)) if next.is_whitespace() => Ok(SpannedMatchStatus::new(
-            Some(pos..pos + 1),
-            MatchStatus::Match((&input[1..], next)),
-        )),
-        _ => Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input))),
+        Some(&(pos, next)) if next.is_whitespace() => Ok(MatchStatus::Match {
+            span: pos..pos + 1,
+            remainder: &input[1..],
+            inner: next,
+        }),
+        _ => Ok(MatchStatus::NoMatch(input)),
     }
 }
 
@@ -307,11 +309,12 @@ pub fn whitespace<'a>() -> impl Parser<'a, &'a [(usize, char)], char> {
 /// ```
 pub fn eof<'a>() -> impl Parser<'a, &'a [(usize, char)], char> {
     move |input: &'a [(usize, char)]| match input.get(0) {
-        Some(_) => Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input))),
-        None => Ok(SpannedMatchStatus::new(
-            None,
-            MatchStatus::Match((&input[0..], ' ')),
-        )),
+        Some(_) => Ok(MatchStatus::NoMatch(input)),
+        None => Ok(MatchStatus::Match {
+            span: 0..0,
+            remainder: &input[0..],
+            inner: ' ',
+        }),
     }
 }
 
@@ -368,11 +371,12 @@ pub fn newline<'a>() -> impl Parser<'a, &'a [(usize, char)], char> {
 /// ```
 pub fn alphabetic<'a>() -> impl Parser<'a, &'a [(usize, char)], char> {
     move |input: &'a [(usize, char)]| match input.get(0) {
-        Some(&(pos, next)) if next.is_alphabetic() => Ok(SpannedMatchStatus::new(
-            Some(pos..pos + 1),
-            MatchStatus::Match((&input[1..], next)),
-        )),
-        _ => Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input))),
+        Some(&(pos, next)) if next.is_alphabetic() => Ok(MatchStatus::Match {
+            span: pos..pos + 1,
+            remainder: &input[1..],
+            inner: next,
+        }),
+        _ => Ok(MatchStatus::NoMatch(input)),
     }
 }
 
@@ -436,10 +440,11 @@ pub fn alphabetic<'a>() -> impl Parser<'a, &'a [(usize, char)], char> {
 /// ```
 pub fn digit<'a>(radix: u32) -> impl Parser<'a, &'a [(usize, char)], char> {
     move |input: &'a [(usize, char)]| match input.get(0) {
-        Some(&(pos, next)) if next.is_digit(radix) => Ok(SpannedMatchStatus::new(
-            Some(pos..pos + 1),
-            MatchStatus::Match((&input[1..], next)),
-        )),
-        _ => Ok(SpannedMatchStatus::new(None, MatchStatus::NoMatch(input))),
+        Some(&(pos, next)) if next.is_digit(radix) => Ok(MatchStatus::Match {
+            span: pos..pos + 1,
+            remainder: &input[1..],
+            inner: next,
+        }),
+        _ => Ok(MatchStatus::NoMatch(input)),
     }
 }

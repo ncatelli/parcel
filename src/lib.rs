@@ -946,13 +946,12 @@ where
 {
     move |input| match parser.parse(input) {
         Ok(MatchStatus::Match {
-            span,
+            span: _,
             remainder,
-            inner,
+            inner: _,
         }) => Ok(MatchStatus::NoMatch(remainder)),
         Ok(MatchStatus::NoMatch(last_input)) => Ok(MatchStatus::NoMatch(last_input)),
         Err(e) => Err(e),
-        _ => Err("Invalid match type".to_string()),
     }
 }
 
@@ -1024,7 +1023,7 @@ where
     move |input| match parser.parse(input) {
         Ok(ms) => match ms {
             MatchStatus::Match {
-                span,
+                span: _,
                 remainder,
                 inner,
             } => f(inner).parse(remainder),
