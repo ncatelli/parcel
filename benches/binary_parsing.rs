@@ -5,7 +5,7 @@ use parcel::Parser;
 
 fn parse_map(c: &mut Criterion) {
     let mut group = c.benchmark_group("map combinator");
-    let seed_vec = vec![0x00, 0x01, 0x02];
+    let seed_vec: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
@@ -24,7 +24,7 @@ fn parse_map(c: &mut Criterion) {
 
 fn parse_skip(c: &mut Criterion) {
     let mut group = c.benchmark_group("skip combinator");
-    let seed_vec = vec![0x00, 0x01, 0x02];
+    let seed_vec: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
@@ -41,7 +41,7 @@ fn parse_skip(c: &mut Criterion) {
 
 fn parse_or(c: &mut Criterion) {
     let mut group = c.benchmark_group("or combinator");
-    let seed_vec = vec![0x00, 0x01, 0x02];
+    let seed_vec: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
@@ -62,7 +62,7 @@ fn parse_or(c: &mut Criterion) {
 
 fn parse_one_of(c: &mut Criterion) {
     let mut group = c.benchmark_group("one_of combinator");
-    let seed_vec = vec![0x00, 0x01, 0x02];
+    let seed_vec: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
@@ -79,7 +79,7 @@ fn parse_one_of(c: &mut Criterion) {
 
 fn parse_and_then(c: &mut Criterion) {
     let mut group = c.benchmark_group("and_then combinator");
-    let seed_vec = vec![0x00, 0x01, 0x02];
+    let seed_vec: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     group.bench_function("combinator with u8 vec", |b| {
         b.iter(|| {
@@ -100,7 +100,7 @@ fn parse_and_then(c: &mut Criterion) {
 
 fn parse_peek_next(c: &mut Criterion) {
     let mut group = c.benchmark_group("peek_next combinator");
-    let seed_vec = vec![0x00, 0x01, 0x02];
+    let seed_vec: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
@@ -121,7 +121,10 @@ fn parse_peek_next(c: &mut Criterion) {
 
 fn parse_take_until_n(c: &mut Criterion) {
     let mut group = c.benchmark_group("take_until_n combinator");
-    let seed_vec = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
+    let seed_vec: Vec<(usize, u8)> = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02]
+        .into_iter()
+        .enumerate()
+        .collect();
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
@@ -141,7 +144,10 @@ fn parse_take_until_n(c: &mut Criterion) {
 
 fn parse_take_n(c: &mut Criterion) {
     let mut group = c.benchmark_group("take_n combinator");
-    let seed_vec = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
+    let seed_vec: Vec<(usize, u8)> = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02]
+        .into_iter()
+        .enumerate()
+        .collect();
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
@@ -159,7 +165,7 @@ fn parse_take_n(c: &mut Criterion) {
 
 fn parse_predicate(c: &mut Criterion) {
     let mut group = c.benchmark_group("predicate combinator");
-    let seed_vec = vec![0x00, 0x01, 0x02];
+    let seed_vec: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
@@ -179,7 +185,7 @@ fn parse_predicate(c: &mut Criterion) {
 
 fn parse_zero_or_more(c: &mut Criterion) {
     let mut group = c.benchmark_group("zero_or_more combinator");
-    let seed_vec = vec![0x00, 0x01, 0x02];
+    let seed_vec: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
@@ -197,7 +203,7 @@ fn parse_zero_or_more(c: &mut Criterion) {
 
 fn parse_one_or_more(c: &mut Criterion) {
     let mut group = c.benchmark_group("one_or_more combinator");
-    let seed_vec = vec![0x00, 0x01, 0x02];
+    let seed_vec: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
@@ -215,7 +221,7 @@ fn parse_one_or_more(c: &mut Criterion) {
 
 fn parse_optional(c: &mut Criterion) {
     let mut group = c.benchmark_group("optional combinator");
-    let seed_vec = vec![0x00, 0x01, 0x02];
+    let seed_vec: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
@@ -233,7 +239,7 @@ fn parse_optional(c: &mut Criterion) {
 
 fn parse_applicatives(c: &mut Criterion) {
     let mut group = c.benchmark_group("applicatives combinator");
-    let seed_vec = vec![0x00, 0x01, 0x02];
+    let seed_vec: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     group.bench_function("join combinator with byte vec", |b| {
         b.iter(|| {

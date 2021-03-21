@@ -8,9 +8,12 @@ use crate::prelude::v1::*;
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x01, 0x02]
+///     .into_iter()
+///     .enumerate()
+///     .collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], 0x00))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
 ///   expect_byte(0x00).parse(&input)
 /// );
 /// ```
@@ -18,15 +21,22 @@ use crate::prelude::v1::*;
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x01, 0x02]
+///     .into_iter()
+///     .enumerate()
+///     .collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
 ///   expect_byte(0x02).parse(&input)
 /// );
 /// ```
-pub fn expect_byte<'a>(expected: u8) -> impl Parser<'a, &'a [u8], u8> {
-    move |input: &'a [u8]| match input.get(0) {
-        Some(&next) if next == expected => Ok(MatchStatus::Match((&input[1..], next))),
+pub fn expect_byte<'a>(expected: u8) -> impl Parser<'a, &'a [(usize, u8)], u8> {
+    move |input: &'a [(usize, u8)]| match input.get(0) {
+        Some(&(pos, next)) if next == expected => Ok(MatchStatus::Match {
+            span: pos..pos + 1,
+            remainder: &input[1..],
+            inner: next,
+        }),
         _ => Ok(MatchStatus::NoMatch(input)),
     }
 }
@@ -40,9 +50,12 @@ pub fn expect_byte<'a>(expected: u8) -> impl Parser<'a, &'a [u8], u8> {
 /// ```
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::any_byte;
-/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x01, 0x02]
+///     .into_iter()
+///     .enumerate()
+///     .collect();
 /// assert_eq!(
-///   Ok(parcel::MatchStatus::Match((&input[1..], 0x00))),
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
 ///   any_byte().parse(&input)
 /// );
 /// ```
@@ -56,9 +69,13 @@ pub fn expect_byte<'a>(expected: u8) -> impl Parser<'a, &'a [u8], u8> {
 ///   any_byte().parse(&input[0..])
 /// );
 /// ```
-pub fn any_byte<'a>() -> impl Parser<'a, &'a [u8], u8> {
-    move |input: &'a [u8]| match input.get(0) {
-        Some(&next) => Ok(MatchStatus::Match((&input[1..], next))),
+pub fn any_byte<'a>() -> impl Parser<'a, &'a [(usize, u8)], u8> {
+    move |input: &'a [(usize, u8)]| match input.get(0) {
+        Some(&(pos, next)) => Ok(MatchStatus::Match {
+            span: pos..pos + 1,
+            remainder: &input[1..],
+            inner: next,
+        }),
         _ => Ok(MatchStatus::NoMatch(input)),
     }
 }

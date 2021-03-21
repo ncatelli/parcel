@@ -4,17 +4,21 @@ use crate::{predicate, take_until_n};
 
 #[test]
 fn parser_should_parse_byte_match() {
-    let input = vec![0x00, 0x01, 0x02];
+    let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     assert_eq!(
-        Ok(MatchStatus::Match((&input[1..], 0x00))),
+        Ok(MatchStatus::Match {
+            span: 0..1,
+            remainder: &input[1..],
+            inner: 0x00
+        }),
         expect_byte(0x00).parse(&input)
     );
 }
 
 #[test]
 fn parser_should_not_skip_input_if_parser_does_not_match() {
-    let input = vec![0x00, 0x01, 0x02];
+    let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
@@ -24,40 +28,58 @@ fn parser_should_not_skip_input_if_parser_does_not_match() {
 
 #[test]
 fn parser_can_match_with_take_until_n() {
-    let input = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
+    let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02]
+        .into_iter()
+        .enumerate()
+        .collect();
 
     assert_eq!(
-        Ok(MatchStatus::Match((
-            &input[4..],
-            vec![0x00, 0x00, 0x00, 0x00]
-        ))),
+        Ok(MatchStatus::Match {
+            span: 0..4,
+            remainder: &input[4..],
+            inner: vec![0x00, 0x00, 0x00, 0x00]
+        }),
         take_until_n(expect_byte(0x00), 4).parse(&input)
     );
 }
 
 #[test]
 fn take_until_n_will_match_only_up_to_specified_limit() {
-    let input = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02];
+    let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x00, 0x00, 0x01, 0x02]
+        .into_iter()
+        .enumerate()
+        .collect();
 
     assert_eq!(
-        Ok(MatchStatus::Match((&input[3..], vec![0x00, 0x00, 0x00]))),
+        Ok(MatchStatus::Match {
+            span: 0..3,
+            remainder: &input[3..],
+            inner: vec![0x00, 0x00, 0x00]
+        }),
         expect_byte(0x00).take_until_n(3).parse(&input)
     );
 }
 
 #[test]
 fn take_until_n_will_return_as_many_matches_as_possible() {
-    let input = vec![0x00, 0x00, 0x01, 0x02];
+    let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x01, 0x02]
+        .into_iter()
+        .enumerate()
+        .collect();
 
     assert_eq!(
-        Ok(MatchStatus::Match((&input[2..], vec![0x00, 0x00]))),
+        Ok(MatchStatus::Match {
+            span: 0..2,
+            remainder: &input[2..],
+            inner: vec![0x00, 0x00]
+        }),
         expect_byte(0x00).take_until_n(3).parse(&input)
     );
 }
 
 #[test]
 fn take_until_n_returns_a_no_match_on_no_match() {
-    let input = vec![0x00, 0x01, 0x02];
+    let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
@@ -67,7 +89,7 @@ fn take_until_n_returns_a_no_match_on_no_match() {
 
 #[test]
 fn take_n_returns_a_no_match_on_no_match() {
-    let input = vec![0x00, 0x01, 0x02];
+    let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
@@ -77,7 +99,7 @@ fn take_n_returns_a_no_match_on_no_match() {
 
 #[test]
 fn predicate_should_not_match_if_case_is_true() {
-    let input = vec![0x00, 0x01, 0x02];
+    let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 
     assert_eq!(
         Ok(MatchStatus::NoMatch(&input[0..])),
