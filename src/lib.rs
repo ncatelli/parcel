@@ -1,6 +1,6 @@
-//! This crate functions as a test/toy implementation of parser combinators in
-//! rust, heavily inspired by the article by Bodil Stokke. While the goal of
-//! this crate is to be functional for both text and binary grammars I'd highly
+//! This crate functions as an implementation of parser combinators in rust,
+//! heavily inspired by the article by Bodil Stokke. While the goal of this
+//! crate is to be functional for both text and binary grammars I'd highly
 //! recommend against using it for anything other than experimentation.
 //! Instead, recommending Geal/nom.
 
