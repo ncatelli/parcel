@@ -734,6 +734,40 @@ impl<'a, Input, Output> Parser<'a, Input, Output> for BoxedParser<'a, Input, Out
     }
 }
 
+#[derive(Debug)]
+pub struct Or<P1, P2> {
+    p1: P1,
+    p2: P2,
+}
+
+impl<P1, P2> Or<P1, P2> {
+    pub fn new<P>(p1: P1, p2: P2) -> Self {
+        Or { p1, p2 }
+    }
+}
+
+impl<'a, Input, Output, P1, P2> Parser<'a, Input, Output> for Or<P1, P2>
+where
+    P1: Parser<'a, Input, Output>,
+    P2: Parser<'a, Input, Output>,
+{
+    fn parse(&self, input: Input) -> ParseResult<'a, Input, Output> {
+        match self.p1.parse(input) {
+            Ok(ms) => match ms {
+                m
+                @
+                MatchStatus::Match {
+                    span: _,
+                    remainder: _,
+                    inner: _,
+                } => Ok(m),
+                MatchStatus::NoMatch(input) => self.p2.parse(input),
+            },
+            e @ Err(_) => e,
+        }
+    }
+}
+
 /// Provides a short-circuiting or combinator taking a parser (P1) as an
 /// argument and a second parser (P2), provided via a closure thunk to prevent
 /// infinitely recursing.
