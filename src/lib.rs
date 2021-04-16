@@ -734,6 +734,28 @@ impl<'a, Input, Output> Parser<'a, Input, Output> for BoxedParser<'a, Input, Out
     }
 }
 
+/// Provides a short-circuiting or combinator taking a parser (P1) as an
+/// argument and a second parser (P2), provided via a closure thunk to prevent
+/// infinitely recursing.
+///
+/// The second parser passed to `or` is lazily evaluated, Only if the first case
+/// fails. This functions as a way to work around instances of Opaque types that
+/// that could lead to type issues when using an alternative, yet similar parser
+/// like `one_of`.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::Or;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+///
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
+///   Or::new(expect_character('b'), expect_character('a')).parse(&input)
+/// );
+/// ```
 #[derive(Debug)]
 pub struct Or<P1, P2> {
     p1: P1,
@@ -741,7 +763,7 @@ pub struct Or<P1, P2> {
 }
 
 impl<P1, P2> Or<P1, P2> {
-    pub fn new<P>(p1: P1, p2: P2) -> Self {
+    pub fn new(p1: P1, p2: P2) -> Self {
         Or { p1, p2 }
     }
 }
