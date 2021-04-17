@@ -826,19 +826,7 @@ where
     P1: Parser<'a, A, B>,
     P2: Parser<'a, A, B>,
 {
-    move |input| match parser1.parse(input) {
-        Ok(ms) => match ms {
-            m
-            @
-            MatchStatus::Match {
-                span: _,
-                remainder: _,
-                inner: _,
-            } => Ok(m),
-            MatchStatus::NoMatch(_) => thunk_to_parser().parse(input),
-        },
-        e @ Err(_) => e,
-    }
+    Or::new(parser1, thunk_to_parser())
 }
 
 /// Provides a convenient shortcut for the or combinator. allowing the passing
