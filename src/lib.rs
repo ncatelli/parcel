@@ -169,7 +169,7 @@ pub trait Parser<'a, Input, Output> {
         Output: 'a,
         P: Parser<'a, Input, Output> + 'a,
     {
-        BoxedParser::new(or(self, thunk))
+        BoxedParser::new(Or::new(self, thunk()))
     }
 
     /// Returns a match if Parser<A, B> matches and then Parser<A, C> matches,
