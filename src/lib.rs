@@ -169,7 +169,7 @@ pub trait Parser<'a, Input, Output> {
         Output: 'a,
         P: Parser<'a, Input, Output> + 'a,
     {
-        BoxedParser::new(Or::new(self, thunk()))
+        BoxedParser::new(or(self, thunk))
     }
 
     /// Returns a match if Parser<A, B> matches and then Parser<A, C> matches,
@@ -756,6 +756,18 @@ impl<'a, Input, Output> Parser<'a, Input, Output> for BoxedParser<'a, Input, Out
 ///   Or::new(expect_character('b'), expect_character('a')).parse(&input)
 /// );
 /// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::Or;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+///
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   Or::new(expect_character('b'), expect_character('c')).parse(&input)
+/// );
+/// ```
 #[derive(Debug)]
 pub struct Or<P1, P2> {
     p1: P1,
@@ -820,7 +832,7 @@ where
 ///   parcel::or(expect_byte(0x01), || expect_byte(0x00)).parse(&input)
 /// );
 /// ```
-pub fn or<'a, P1, P2, A, B>(parser1: P1, thunk_to_parser: impl Fn() -> P2) -> impl Parser<'a, A, B>
+pub fn or<'a, P1, P2, A, B>(parser1: P1, thunk_to_parser: impl Fn() -> P2) -> Or<P1, P2>
 where
     A: Copy + 'a + Borrow<A>,
     P1: Parser<'a, A, B>,
