@@ -967,6 +967,80 @@ where
 ///
 /// ```
 /// use parcel::prelude::v1::*;
+/// use parcel::Map;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: "a".to_string()}),
+///   Map::new(
+///       expect_character('a'),
+///       |res| format!("{}", res)
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::Map;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: "0".to_string()}),
+///   Map::new(
+///       expect_byte(0x00),
+///       |res| format!("{}", res)
+///   ).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct Map<P, F, A, B, C> {
+    input: std::marker::PhantomData<A>,
+    output_one: std::marker::PhantomData<B>,
+    output_two: std::marker::PhantomData<C>,
+    parser: P,
+    map_fn: F,
+}
+
+impl<'a, P, F, A, B, C> Map<P, F, A, B, C> {
+    pub fn new(parser: P, map_fn: F) -> Self {
+        Self {
+            input: std::marker::PhantomData,
+            output_one: std::marker::PhantomData,
+            output_two: std::marker::PhantomData,
+            parser,
+            map_fn,
+        }
+    }
+}
+
+impl<'a, P, F, A, B, C> Parser<'a, A, C> for Map<P, F, A, B, C>
+where
+    P: Parser<'a, A, B>,
+    F: Fn(B) -> C + 'a,
+{
+    fn parse(&self, input: A) -> ParseResult<'a, A, C> {
+        self.parser.parse(input).map(|ms| match ms {
+            MatchStatus::Match {
+                span,
+                remainder,
+                inner,
+            } => MatchStatus::Match {
+                span,
+                remainder,
+                inner: (self.map_fn)(inner),
+            },
+            MatchStatus::NoMatch(last_input) => MatchStatus::NoMatch(last_input),
+        })
+    }
+}
+
+/// Map transforms a `Parser<A, B>` to `Parser<A, C>` via a closure, map_fn,
+/// allowing transformation of the result `B -> C`.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
 /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
@@ -990,25 +1064,12 @@ where
 ///   ).parse(&input)
 /// );
 /// ```
-pub fn map<'a, P, F, A: 'a, B, C>(parser: P, map_fn: F) -> impl Parser<'a, A, C>
+pub fn map<'a, P, F, A: 'a, B, C>(parser: P, map_fn: F) -> Map<P, F, A, B, C>
 where
     P: Parser<'a, A, B>,
     F: Fn(B) -> C + 'a,
 {
-    move |input| {
-        parser.parse(input).map(|ms| match ms {
-            MatchStatus::Match {
-                span,
-                remainder,
-                inner,
-            } => MatchStatus::Match {
-                span,
-                remainder,
-                inner: map_fn(inner),
-            },
-            MatchStatus::NoMatch(last_input) => MatchStatus::NoMatch(last_input),
-        })
-    }
+    Map::new(parser, map_fn)
 }
 
 /// Attempts to match a parser, `P`, skipping the input if it matches. For cases
