@@ -747,25 +747,23 @@ impl<'a, Input, Output> Parser<'a, Input, Output> for BoxedParser<'a, Input, Out
 ///
 /// ```
 /// use parcel::prelude::v1::*;
-/// use parcel::Or;
 /// use parcel::parsers::character::expect_character;
 /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 ///
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
-///   Or::new(expect_character('b'), expect_character('a')).parse(&input)
+///   parcel::Or::new(expect_character('b'), expect_character('a')).parse(&input)
 /// );
 /// ```
 ///
 /// ```
 /// use parcel::prelude::v1::*;
-/// use parcel::Or;
 /// use parcel::parsers::character::expect_character;
 /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 ///
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
-///   Or::new(expect_character('b'), expect_character('c')).parse(&input)
+///   parcel::Or::new(expect_character('b'), expect_character('c')).parse(&input)
 /// );
 /// ```
 #[derive(Debug)]
@@ -858,25 +856,23 @@ where
 ///
 /// ```
 /// use parcel::prelude::v1::*;
-/// use parcel::OneOf;
 /// use parcel::parsers::character::expect_character;
 /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// let parsers = vec![expect_character('b'), expect_character('c'), expect_character('a')];
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
-///   OneOf::new(parsers).parse(&input)
+///   parcel::OneOf::new(parsers).parse(&input)
 /// );
 /// ```
 ///
 /// ```
 /// use parcel::prelude::v1::*;
-/// use parcel::OneOf;
 /// use parcel::parsers::byte::expect_byte;
 /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// let parsers = vec![expect_byte(0x01), expect_byte(0x02), expect_byte(0x00)];
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
-///   OneOf::new(parsers).parse(&input)
+///   parcel::OneOf::new(parsers).parse(&input)
 /// );
 /// ```
 #[derive(Debug)]
@@ -967,12 +963,11 @@ where
 ///
 /// ```
 /// use parcel::prelude::v1::*;
-/// use parcel::Map;
 /// use parcel::parsers::character::expect_character;
 /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: "a".to_string()}),
-///   Map::new(
+///   parcel::Map::new(
 ///       expect_character('a'),
 ///       |res| format!("{}", res)
 ///   ).parse(&input)
@@ -986,7 +981,7 @@ where
 /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: "0".to_string()}),
-///   Map::new(
+///   parcel::Map::new(
 ///       expect_byte(0x00),
 ///       |res| format!("{}", res)
 ///   ).parse(&input)
@@ -1083,6 +1078,59 @@ where
 /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::NoMatch(&input[1..])),
+///   parcel::Skip::new(expect_character('a')).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[1..])),
+///   parcel::Skip::new(expect_byte(0x00)).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct Skip<P> {
+    parser: P,
+}
+
+impl<P> Skip<P> {
+    pub fn new(parser: P) -> Self {
+        Self { parser }
+    }
+}
+
+impl<'a, Input, Output, P> Parser<'a, Input, Output> for Skip<P>
+where
+    Input: 'a,
+    P: Parser<'a, Input, Output>,
+{
+    fn parse(&self, input: Input) -> ParseResult<'a, Input, Output> {
+        match self.parser.parse(input) {
+            Ok(MatchStatus::Match {
+                span: _,
+                remainder,
+                inner: _,
+            }) => Ok(MatchStatus::NoMatch(remainder)),
+            Ok(MatchStatus::NoMatch(last_input)) => Ok(MatchStatus::NoMatch(last_input)),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+/// Attempts to match a parser, `P`, skipping the input if it matches. For cases
+/// `P` doesn't match the previous input is returned.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[1..])),
 ///   parcel::skip(expect_character('a')).parse(&input)
 /// );
 /// ```
@@ -1096,20 +1144,12 @@ where
 ///   parcel::skip(expect_byte(0x00)).parse(&input)
 /// );
 /// ```
-pub fn skip<'a, P, A, B>(parser: P) -> impl Parser<'a, A, B>
+pub fn skip<'a, P, Input, Output>(parser: P) -> Skip<P>
 where
-    A: 'a,
-    P: Parser<'a, A, B>,
+    Input: 'a,
+    P: Parser<'a, Input, Output>,
 {
-    move |input| match parser.parse(input) {
-        Ok(MatchStatus::Match {
-            span: _,
-            remainder,
-            inner: _,
-        }) => Ok(MatchStatus::NoMatch(remainder)),
-        Ok(MatchStatus::NoMatch(last_input)) => Ok(MatchStatus::NoMatch(last_input)),
-        Err(e) => Err(e),
-    }
+    Skip::new(parser)
 }
 
 /// Returns a match if Parser<A, B> matches and then Parser<A, C> matches,
