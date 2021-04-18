@@ -1163,6 +1163,110 @@ where
 /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: 'b'}),
+///   parcel::AndThen::new(
+///       expect_character('a'),
+///       |_| expect_character('b'),
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: "ab".to_string()}),
+///   parcel::AndThen::new(
+///       expect_character('a'),
+///       |first_match| expect_character('b').map(move |second_match| {
+///          format!("{}{}", first_match, second_match)
+///       })).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: 0x01}),
+///   parcel::AndThen::new(
+///       expect_byte(0x00),
+///       |_| expect_byte(0x01),
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: "01".to_string()}),
+///   parcel::AndThen::new(
+///       expect_byte(0x00),
+///       |first_match| expect_byte(0x01).map(move |second_match| {
+///          format!("{}{}", first_match, second_match)
+///       })).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct AndThen<P1, P2, F, A, B, C> {
+    input: std::marker::PhantomData<A>,
+    output_one: std::marker::PhantomData<B>,
+    output_two: std::marker::PhantomData<C>,
+    parser1: P1,
+    parser2: std::marker::PhantomData<P2>,
+    f: F,
+}
+
+impl<'a, P1, P2, F, A, B, C> AndThen<P1, P2, F, A, B, C> {
+    pub fn new(parser1: P1, f: F) -> Self {
+        Self {
+            input: std::marker::PhantomData,
+            output_one: std::marker::PhantomData,
+            output_two: std::marker::PhantomData,
+            parser1,
+            parser2: std::marker::PhantomData,
+            f,
+        }
+    }
+}
+
+impl<'a, P1, P2, F, A, B, C> Parser<'a, A, C> for AndThen<P1, P2, F, A, B, C>
+where
+    A: 'a,
+    P1: Parser<'a, A, B>,
+    P2: Parser<'a, A, C>,
+    F: Fn(B) -> P2 + 'a,
+{
+    fn parse(&self, input: A) -> ParseResult<'a, A, C> {
+        match self.parser1.parse(input) {
+            Ok(ms) => match ms {
+                MatchStatus::Match {
+                    span: _,
+                    remainder,
+                    inner,
+                } => (self.f)(inner).parse(remainder),
+
+                MatchStatus::NoMatch(last_input) => Ok(MatchStatus::NoMatch(last_input)),
+            },
+            Err(e) => Err(e),
+        }
+    }
+}
+
+/// Returns a match if Parser<A, B> matches and then Parser<A, C> matches,
+/// returning the results of the second parser.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 1..2, remainder: &input[2..], inner: 'b'}),
 ///   parcel::and_then(
 ///       expect_character('a'),
 ///       |_| expect_character('b'),
@@ -1210,25 +1314,14 @@ where
 ///       })).parse(&input)
 /// );
 /// ```
-pub fn and_then<'a, P1, F, P2, A, B, C>(parser: P1, f: F) -> impl Parser<'a, A, C>
+pub fn and_then<'a, P1, F, P2, A, B, C>(parser: P1, f: F) -> AndThen<P1, P2, F, A, B, C>
 where
     A: 'a,
     P1: Parser<'a, A, B>,
     P2: Parser<'a, A, C>,
     F: Fn(B) -> P2 + 'a,
 {
-    move |input| match parser.parse(input) {
-        Ok(ms) => match ms {
-            MatchStatus::Match {
-                span: _,
-                remainder,
-                inner,
-            } => f(inner).parse(remainder),
-
-            MatchStatus::NoMatch(last_input) => Ok(MatchStatus::NoMatch(last_input)),
-        },
-        Err(e) => Err(e),
-    }
+    AndThen::new(parser, f)
 }
 
 /// Returns a match if Parser<A, B> matches and then Parser<A, C> matches,
