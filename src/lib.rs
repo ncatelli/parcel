@@ -747,6 +747,74 @@ impl<'a, Input, Output> Parser<'a, Input, Output> for BoxedParser<'a, Input, Out
 ///
 /// ```
 /// use parcel::prelude::v1::*;
+/// use parcel::Or;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+///
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
+///   Or::new(expect_character('b'), expect_character('a')).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::Or;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+///
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   Or::new(expect_character('b'), expect_character('c')).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct Or<P1, P2> {
+    p1: P1,
+    p2: P2,
+}
+
+impl<P1, P2> Or<P1, P2> {
+    pub fn new(p1: P1, p2: P2) -> Self {
+        Self { p1, p2 }
+    }
+}
+
+impl<'a, Input, Output, P1, P2> Parser<'a, Input, Output> for Or<P1, P2>
+where
+    P1: Parser<'a, Input, Output>,
+    P2: Parser<'a, Input, Output>,
+{
+    fn parse(&self, input: Input) -> ParseResult<'a, Input, Output> {
+        match self.p1.parse(input) {
+            Ok(ms) => match ms {
+                m
+                @
+                MatchStatus::Match {
+                    span: _,
+                    remainder: _,
+                    inner: _,
+                } => Ok(m),
+                MatchStatus::NoMatch(input) => self.p2.parse(input),
+            },
+            e @ Err(_) => e,
+        }
+    }
+}
+
+/// Provides a short-circuiting or combinator taking a parser (P1) as an
+/// argument and a second parser (P2), provided via a closure thunk to prevent
+/// infinitely recursing.
+///
+/// The second parser passed to `or` is lazily evaluated, Only if the first case
+/// fails. This functions as a way to work around instances of Opaque types that
+/// that could lead to type issues when using an alternative, yet similar parser
+/// like `one_of`.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
 /// use parcel::parsers::character::expect_character;
 /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
@@ -764,24 +832,87 @@ impl<'a, Input, Output> Parser<'a, Input, Output> for BoxedParser<'a, Input, Out
 ///   parcel::or(expect_byte(0x01), || expect_byte(0x00)).parse(&input)
 /// );
 /// ```
-pub fn or<'a, P1, P2, A, B>(parser1: P1, thunk_to_parser: impl Fn() -> P2) -> impl Parser<'a, A, B>
+pub fn or<'a, P1, P2, A, B>(parser1: P1, thunk_to_parser: impl Fn() -> P2) -> Or<P1, P2>
 where
     A: Copy + 'a + Borrow<A>,
     P1: Parser<'a, A, B>,
     P2: Parser<'a, A, B>,
 {
-    move |input| match parser1.parse(input) {
-        Ok(ms) => match ms {
-            m
-            @
-            MatchStatus::Match {
-                span: _,
-                remainder: _,
-                inner: _,
-            } => Ok(m),
-            MatchStatus::NoMatch(_) => thunk_to_parser().parse(input),
-        },
-        e @ Err(_) => e,
+    Or::new(parser1, thunk_to_parser())
+}
+
+/// Provides a convenient shortcut for the or combinator. allowing the passing
+/// of an array of matching parsers, returning the result of the first matching
+/// parser or a NoMatch if none match.
+///
+/// Types passed to `one_of` are expected to be of the same concrete type. For
+/// cases where opaque or recursive types are used please the `or` combinator
+/// should be used as this captures the `Parser<A, B> -> Parser<A, C>`
+/// transition.
+///
+/// Arguments passed to `one_of` are eagerly evaluated; if you are passing
+/// the result of a function call, it is recommended to use [`or`],
+/// which is lazily evaluated.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::OneOf;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// let parsers = vec![expect_character('b'), expect_character('c'), expect_character('a')];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
+///   OneOf::new(parsers).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::OneOf;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// let parsers = vec![expect_byte(0x01), expect_byte(0x02), expect_byte(0x00)];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
+///   OneOf::new(parsers).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct OneOf<P> {
+    parsers: Vec<P>,
+}
+
+impl<P> OneOf<P> {
+    pub fn new(parsers: Vec<P>) -> Self {
+        Self { parsers }
+    }
+}
+
+impl<'a, Input, Output, P> Parser<'a, Input, Output> for OneOf<P>
+where
+    Input: Copy + Borrow<Input> + 'a,
+    P: Parser<'a, Input, Output>,
+{
+    fn parse(&self, input: Input) -> ParseResult<'a, Input, Output> {
+        for parser in self.parsers.iter() {
+            match parser.parse(input) {
+                Ok(ms) => match ms {
+                    m
+                    @
+                    MatchStatus::Match {
+                        span: _,
+                        remainder: _,
+                        inner: _,
+                    } => return Ok(m),
+                    MatchStatus::NoMatch(_) => continue,
+                },
+                e @ Err(_) => return e,
+            };
+        }
+
+        Ok(MatchStatus::NoMatch(input))
     }
 }
 
@@ -821,29 +952,85 @@ where
 ///   parcel::one_of(parsers).parse(&input)
 /// );
 /// ```
-pub fn one_of<'a, P, A, B>(parsers: Vec<P>) -> impl Parser<'a, A, B>
+pub fn one_of<'a, P, Input, Output>(parsers: Vec<P>) -> OneOf<P>
 where
-    A: Copy + 'a + Borrow<A>,
-    P: Parser<'a, A, B>,
+    Input: Copy + Borrow<Input> + 'a,
+    P: Parser<'a, Input, Output>,
 {
-    move |input| {
-        for parser in parsers.iter() {
-            match parser.parse(input) {
-                Ok(ms) => match ms {
-                    m
-                    @
-                    MatchStatus::Match {
-                        span: _,
-                        remainder: _,
-                        inner: _,
-                    } => return Ok(m),
-                    MatchStatus::NoMatch(_) => continue,
-                },
-                e @ Err(_) => return e,
-            };
-        }
+    OneOf::new(parsers)
+}
 
-        Ok(MatchStatus::NoMatch(input))
+/// Map transforms a `Parser<A, B>` to `Parser<A, C>` via a closure, map_fn,
+/// allowing transformation of the result `B -> C`.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::Map;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: "a".to_string()}),
+///   Map::new(
+///       expect_character('a'),
+///       |res| format!("{}", res)
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::Map;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: "0".to_string()}),
+///   Map::new(
+///       expect_byte(0x00),
+///       |res| format!("{}", res)
+///   ).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct Map<P, F, A, B, C> {
+    input: std::marker::PhantomData<A>,
+    output_one: std::marker::PhantomData<B>,
+    output_two: std::marker::PhantomData<C>,
+    parser: P,
+    map_fn: F,
+}
+
+impl<'a, P, F, A, B, C> Map<P, F, A, B, C> {
+    pub fn new(parser: P, map_fn: F) -> Self {
+        Self {
+            input: std::marker::PhantomData,
+            output_one: std::marker::PhantomData,
+            output_two: std::marker::PhantomData,
+            parser,
+            map_fn,
+        }
+    }
+}
+
+impl<'a, P, F, A, B, C> Parser<'a, A, C> for Map<P, F, A, B, C>
+where
+    P: Parser<'a, A, B>,
+    F: Fn(B) -> C + 'a,
+{
+    fn parse(&self, input: A) -> ParseResult<'a, A, C> {
+        self.parser.parse(input).map(|ms| match ms {
+            MatchStatus::Match {
+                span,
+                remainder,
+                inner,
+            } => MatchStatus::Match {
+                span,
+                remainder,
+                inner: (self.map_fn)(inner),
+            },
+            MatchStatus::NoMatch(last_input) => MatchStatus::NoMatch(last_input),
+        })
     }
 }
 
@@ -877,25 +1064,12 @@ where
 ///   ).parse(&input)
 /// );
 /// ```
-pub fn map<'a, P, F, A: 'a, B, C>(parser: P, map_fn: F) -> impl Parser<'a, A, C>
+pub fn map<'a, P, F, A: 'a, B, C>(parser: P, map_fn: F) -> Map<P, F, A, B, C>
 where
     P: Parser<'a, A, B>,
     F: Fn(B) -> C + 'a,
 {
-    move |input| {
-        parser.parse(input).map(|ms| match ms {
-            MatchStatus::Match {
-                span,
-                remainder,
-                inner,
-            } => MatchStatus::Match {
-                span,
-                remainder,
-                inner: map_fn(inner),
-            },
-            MatchStatus::NoMatch(last_input) => MatchStatus::NoMatch(last_input),
-        })
-    }
+    Map::new(parser, map_fn)
 }
 
 /// Attempts to match a parser, `P`, skipping the input if it matches. For cases
