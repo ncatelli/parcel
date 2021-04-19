@@ -830,7 +830,7 @@ where
 ///   parcel::or(expect_byte(0x01), || expect_byte(0x00)).parse(&input)
 /// );
 /// ```
-pub fn or<'a, P1, P2, A, B>(parser1: P1, thunk_to_parser: impl Fn() -> P2) -> Or<P1, P2>
+pub fn or<'a, P1, P2, A, B>(parser1: P1, thunk_to_parser: impl Fn() -> P2) -> impl Parser<'a, A, B>
 where
     A: Copy + 'a + Borrow<A>,
     P1: Parser<'a, A, B>,
@@ -948,7 +948,7 @@ where
 ///   parcel::one_of(parsers).parse(&input)
 /// );
 /// ```
-pub fn one_of<'a, P, Input, Output>(parsers: Vec<P>) -> OneOf<P>
+pub fn one_of<'a, P, Input, Output>(parsers: Vec<P>) -> impl Parser<'a, Input, Output>
 where
     Input: Copy + Borrow<Input> + 'a,
     P: Parser<'a, Input, Output>,
@@ -1059,7 +1059,7 @@ where
 ///   ).parse(&input)
 /// );
 /// ```
-pub fn map<'a, P, F, A: 'a, B, C>(parser: P, map_fn: F) -> Map<P, F, A, B, C>
+pub fn map<'a, P, F, A: 'a, B, C>(parser: P, map_fn: F) -> impl Parser<'a, A, C>
 where
     P: Parser<'a, A, B>,
     F: Fn(B) -> C + 'a,
@@ -1144,7 +1144,7 @@ where
 ///   parcel::skip(expect_byte(0x00)).parse(&input)
 /// );
 /// ```
-pub fn skip<'a, P, Input, Output>(parser: P) -> Skip<P>
+pub fn skip<'a, P, Input, Output>(parser: P) -> impl Parser<'a, Input, Output>
 where
     Input: 'a,
     P: Parser<'a, Input, Output>,
@@ -1314,7 +1314,7 @@ where
 ///       })).parse(&input)
 /// );
 /// ```
-pub fn and_then<'a, P1, F, P2, A, B, C>(parser: P1, f: F) -> AndThen<P1, P2, F, A, B, C>
+pub fn and_then<'a, P1, F, P2, A, B, C>(parser: P1, f: F) -> impl Parser<'a, A, C>
 where
     A: 'a,
     P1: Parser<'a, A, B>,
@@ -1496,7 +1496,7 @@ where
 ///   ).parse(&input)
 /// );
 /// ```
-pub fn peek_next<'a, P1, P2, A, B, C>(first: P1, second: P2) -> PeekNext<P1, P2, A, B, C>
+pub fn peek_next<'a, P1, P2, A, B, C>(first: P1, second: P2) -> impl Parser<'a, A, B>
 where
     A: Copy + Borrow<A> + 'a,
     P1: Parser<'a, A, B>,
@@ -1650,7 +1650,10 @@ where
 ///   parcel::take_until_n(expect_byte(0x00), 2).parse(&input)
 /// );
 /// ```
-pub fn take_until_n<'a, P, Input, Output>(parser: P, n: usize) -> TakeUntilN<P>
+pub fn take_until_n<'a, P, Input, Output>(
+    parser: P,
+    n: usize,
+) -> impl Parser<'a, Input, Vec<Output>>
 where
     Input: Copy + 'a,
     P: Parser<'a, Input, Output>,
@@ -1805,7 +1808,7 @@ where
 ///   parcel::take_n(expect_byte(0x00), 2).parse(&input)
 /// );
 /// ```
-pub fn take_n<'a, P, Input, Output>(parser: P, n: usize) -> TakeN<P>
+pub fn take_n<'a, P, Input, Output>(parser: P, n: usize) -> impl Parser<'a, Input, Vec<Output>>
 where
     Input: Copy + 'a,
     P: Parser<'a, Input, Output>,
@@ -1964,7 +1967,7 @@ where
 ///   ).parse(&input)
 /// );
 /// ```
-pub fn predicate<'a, P, F, Input, Output>(parser: P, pred_case: F) -> Predicate<P, F, Input, Output>
+pub fn predicate<'a, P, F, Input, Output>(parser: P, pred_case: F) -> impl Parser<'a, Input, Output>
 where
     Input: Copy + 'a,
     P: Parser<'a, Input, Output>,
