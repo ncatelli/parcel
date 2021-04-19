@@ -2507,6 +2507,82 @@ where
 /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: 'a'}),
+///   parcel::Left::new(
+///       parcel::join(
+///           expect_character('a'),
+///           expect_character('b')
+///       )
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: 0x00}),
+///   parcel::Left::new(
+///       parcel::join(
+///           expect_byte(0x00),
+///           expect_byte(0x01)
+///       )
+///   ).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct Left<P, A, B, C> {
+    a: std::marker::PhantomData<A>,
+    b: std::marker::PhantomData<B>,
+    c: std::marker::PhantomData<C>,
+    parser: P,
+}
+
+impl<'a, P, A, B, C> Left<P, A, B, C> {
+    pub fn new(parser: P) -> Self {
+        Self {
+            a: std::marker::PhantomData,
+            b: std::marker::PhantomData,
+            c: std::marker::PhantomData,
+            parser,
+        }
+    }
+}
+
+impl<'a, P, A, B, C> Parser<'a, A, B> for Left<P, A, B, C>
+where
+    A: Copy + Borrow<A> + 'a,
+    B: 'a,
+    C: 'a,
+    P: Parser<'a, A, (B, C)> + 'a,
+{
+    fn parse(&self, input: A) -> ParseResult<'a, A, B> {
+        self.parser.parse(input).and_then(|ms| match ms {
+            MatchStatus::NoMatch(rem) => Ok(MatchStatus::NoMatch(rem)),
+            MatchStatus::Match {
+                span,
+                remainder,
+                inner,
+            } => Ok(MatchStatus::Match {
+                span: span,
+                remainder: remainder,
+                inner: inner.0,
+            }),
+        })
+    }
+}
+
+/// Left expects to take the results of join, returning a Parser<A, (B, C)>
+/// and then extrapolates the left-hand value, returning a Parser<A, B>.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: 'a'}),
 ///   parcel::left(
 ///       parcel::join(
 ///           expect_character('a'),
@@ -2537,7 +2613,83 @@ where
     C: 'a,
     P: Parser<'a, A, (B, C)> + 'a,
 {
-    parser.map(|(b, _)| b)
+    Left::new(parser)
+}
+
+/// Right expects to take the results of join, returning a Parser<A, (B, C)>
+/// and then extrapolates the value right-hand value, returning a Parser<A, C>.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: 'b'}),
+///   parcel::Right::new(
+///       parcel::join(
+///           expect_character('a'),
+///           expect_character('b')
+///       )
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: 0x01}),
+///   parcel::Right::new(
+///       parcel::join(
+///           expect_byte(0x00),
+///           expect_byte(0x01)
+///       )
+///   ).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct Right<P, A, B, C> {
+    a: std::marker::PhantomData<A>,
+    b: std::marker::PhantomData<B>,
+    c: std::marker::PhantomData<C>,
+    parser: P,
+}
+
+impl<'a, P, A, B, C> Right<P, A, B, C> {
+    pub fn new(parser: P) -> Self {
+        Self {
+            a: std::marker::PhantomData,
+            b: std::marker::PhantomData,
+            c: std::marker::PhantomData,
+            parser,
+        }
+    }
+}
+
+impl<'a, P, A, B, C> Parser<'a, A, C> for Right<P, A, B, C>
+where
+    A: Copy + Borrow<A> + 'a,
+    B: 'a,
+    C: 'a,
+    P: Parser<'a, A, (B, C)> + 'a,
+{
+    fn parse(&self, input: A) -> ParseResult<'a, A, C> {
+        self.parser.parse(input).and_then(|ms| match ms {
+            MatchStatus::NoMatch(rem) => Ok(MatchStatus::NoMatch(rem)),
+            MatchStatus::Match {
+                span,
+                remainder,
+                inner,
+            } => Ok(MatchStatus::Match {
+                span: span,
+                remainder: remainder,
+                inner: inner.1,
+            }),
+        })
+    }
 }
 
 /// Right expects to take the results of join, returning a Parser<A, (B, C)>
@@ -2581,5 +2733,5 @@ where
     C: 'a,
     P: Parser<'a, A, (B, C)> + 'a,
 {
-    parser.map(|(_, c)| c)
+    Right::new(parser)
 }
