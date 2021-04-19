@@ -123,15 +123,15 @@ impl<U, T> MatchStatus<U, T> {
 
 /// Represents the state of parser execution, wrapping the above
 /// MatchStatus and providing an Error string for any problems.
-pub type ParseResult<'a, Input, Output> = Result<MatchStatus<Input, Output>, String>;
+pub type ParseResult<'a, A, B> = Result<MatchStatus<A, B>, String>;
 
 /// Parser is the primary trait serving as the basis for all child combinators.
 /// The most important function defined in this trait is parse, which defines
 /// the function that will be called for all child parsers. As a convenience,
 /// Boxed Implementations of Parser functions are included as trait defaults,
 /// allowing chained parser calls to be made for the sake of code cleanliness.
-pub trait Parser<'a, Input, Output> {
-    fn parse(&self, input: Input) -> ParseResult<'a, Input, Output>;
+pub trait Parser<'a, A, B> {
+    fn parse(&self, input: A) -> ParseResult<'a, A, B>;
 
     /// Provides a short-circuiting or combinator taking a parser (P), provided
     /// via a closure thunk to prevent infinitely recursing.
@@ -162,12 +162,12 @@ pub trait Parser<'a, Input, Output> {
     ///   expect_byte(0x01).or(|| expect_byte(0x00)).parse(&input)
     /// );
     /// ```
-    fn or<P>(self, thunk: impl Fn() -> P + 'a) -> BoxedParser<'a, Input, Output>
+    fn or<P>(self, thunk: impl Fn() -> P + 'a) -> BoxedParser<'a, A, B>
     where
         Self: Sized + 'a,
-        Input: Copy + 'a,
-        Output: 'a,
-        P: Parser<'a, Input, Output> + 'a,
+        A: Copy + 'a,
+        B: 'a,
+        P: Parser<'a, A, B> + 'a,
     {
         BoxedParser::new(or(self, thunk))
     }
@@ -222,14 +222,14 @@ pub trait Parser<'a, Input, Output> {
     ///       })).parse(&input)
     /// );
     /// ```
-    fn and_then<F, NextParser, NewOutput>(self, thunk: F) -> BoxedParser<'a, Input, NewOutput>
+    fn and_then<F, NextParser, NewB>(self, thunk: F) -> BoxedParser<'a, A, NewB>
     where
         Self: Sized + 'a,
-        Input: 'a,
-        Output: 'a,
-        NewOutput: 'a,
-        NextParser: Parser<'a, Input, NewOutput> + 'a,
-        F: Fn(Output) -> NextParser + 'a,
+        A: 'a,
+        B: 'a,
+        NewB: 'a,
+        NextParser: Parser<'a, A, NewB> + 'a,
+        F: Fn(B) -> NextParser + 'a,
     {
         BoxedParser::new(and_then(self, thunk))
     }
@@ -287,13 +287,13 @@ pub trait Parser<'a, Input, Output> {
     ///         .parse(&input[0..])
     /// );
     /// ```
-    fn peek_next<NextParser, NewOutput>(self, second: NextParser) -> BoxedParser<'a, Input, Output>
+    fn peek_next<NextParser, NewB>(self, second: NextParser) -> BoxedParser<'a, A, B>
     where
         Self: Sized + 'a,
-        Input: Copy + Borrow<Input> + 'a,
-        Output: 'a,
-        NewOutput: 'a,
-        NextParser: Parser<'a, Input, NewOutput> + 'a,
+        A: Copy + Borrow<A> + 'a,
+        B: 'a,
+        NewB: 'a,
+        NextParser: Parser<'a, A, NewB> + 'a,
     {
         BoxedParser::new(peek_next(self, second))
     }
@@ -343,11 +343,11 @@ pub trait Parser<'a, Input, Output> {
     ///   expect_byte(0x00).take_until_n(2).parse(&input)
     /// );
     /// ```
-    fn take_until_n(self, n: usize) -> BoxedParser<'a, Input, Vec<Output>>
+    fn take_until_n(self, n: usize) -> BoxedParser<'a, A, Vec<B>>
     where
         Self: Sized + 'a,
-        Input: Copy + 'a,
-        Output: 'a,
+        A: Copy + 'a,
+        B: 'a,
     {
         BoxedParser::new(take_until_n(self, n))
     }
@@ -398,11 +398,11 @@ pub trait Parser<'a, Input, Output> {
     ///   expect_byte(0x00).take_n(2).parse(&input)
     /// );
     /// ```
-    fn take_n(self, n: usize) -> BoxedParser<'a, Input, Vec<Output>>
+    fn take_n(self, n: usize) -> BoxedParser<'a, A, Vec<B>>
     where
         Self: Sized + 'a,
-        Input: Copy + 'a,
-        Output: 'a,
+        A: Copy + 'a,
+        B: 'a,
     {
         BoxedParser::new(take_n(self, n))
     }
@@ -457,12 +457,12 @@ pub trait Parser<'a, Input, Output> {
     ///   ).parse(&input)
     /// );
     /// ```
-    fn predicate<F>(self, predicate_case: F) -> BoxedParser<'a, Input, Output>
+    fn predicate<F>(self, predicate_case: F) -> BoxedParser<'a, A, B>
     where
         Self: Sized + 'a,
-        Input: Copy + 'a,
-        Output: 'a,
-        F: Fn(&Output) -> bool + 'a,
+        A: Copy + 'a,
+        B: 'a,
+        F: Fn(&B) -> bool + 'a,
     {
         BoxedParser::new(predicate(self, predicate_case))
     }
@@ -511,11 +511,11 @@ pub trait Parser<'a, Input, Output> {
     ///   expect_byte(0x02).zero_or_more().parse(&input)
     /// );
     /// ```
-    fn zero_or_more(self) -> BoxedParser<'a, Input, Vec<Output>>
+    fn zero_or_more(self) -> BoxedParser<'a, A, Vec<B>>
     where
         Self: Sized + 'a,
-        Input: Copy + 'a,
-        Output: 'a,
+        A: Copy + 'a,
+        B: 'a,
     {
         BoxedParser::new(zero_or_more(self))
     }
@@ -564,11 +564,11 @@ pub trait Parser<'a, Input, Output> {
     ///   expect_byte(0x02).one_or_more().parse(&input)
     /// );
     /// ```
-    fn one_or_more(self) -> BoxedParser<'a, Input, Vec<Output>>
+    fn one_or_more(self) -> BoxedParser<'a, A, Vec<B>>
     where
         Self: Sized + 'a,
-        Input: Copy + 'a,
-        Output: 'a,
+        A: Copy + 'a,
+        B: 'a,
     {
         BoxedParser::new(one_or_more(self))
     }
@@ -601,13 +601,13 @@ pub trait Parser<'a, Input, Output> {
     ///   ).parse(&input)
     /// );
     /// ```
-    fn map<F, NewOutput>(self, map_fn: F) -> BoxedParser<'a, Input, NewOutput>
+    fn map<F, NewB>(self, map_fn: F) -> BoxedParser<'a, A, NewB>
     where
         Self: Sized + 'a,
-        Input: 'a,
-        Output: 'a,
-        NewOutput: 'a,
-        F: Fn(Output) -> NewOutput + 'a,
+        A: 'a,
+        B: 'a,
+        NewB: 'a,
+        F: Fn(B) -> NewB + 'a,
     {
         BoxedParser::new(map(self, map_fn))
     }
@@ -637,11 +637,11 @@ pub trait Parser<'a, Input, Output> {
     ///   expect_byte(0x00).skip().parse(&input)
     /// );
     /// ```
-    fn skip(self) -> BoxedParser<'a, Input, Output>
+    fn skip(self) -> BoxedParser<'a, A, B>
     where
         Self: Sized + 'a,
-        Input: 'a,
-        Output: 'a,
+        A: 'a,
+        B: 'a,
     {
         BoxedParser::new(skip(self))
     }
@@ -691,36 +691,36 @@ pub trait Parser<'a, Input, Output> {
     ///   expect_byte(0x02).optional().parse(&input)
     /// );
     /// ```
-    fn optional(self) -> BoxedParser<'a, Input, Option<Output>>
+    fn optional(self) -> BoxedParser<'a, A, Option<B>>
     where
         Self: Sized + 'a,
-        Input: Copy + 'a,
-        Output: 'a,
+        A: Copy + 'a,
+        B: 'a,
     {
         BoxedParser::new(optional(self))
     }
 }
 
-impl<'a, F, Input, Output> Parser<'a, Input, Output> for F
+impl<'a, F, A, B> Parser<'a, A, B> for F
 where
-    Input: 'a,
-    F: Fn(Input) -> ParseResult<'a, Input, Output>,
+    A: 'a,
+    F: Fn(A) -> ParseResult<'a, A, B>,
 {
-    fn parse(&self, input: Input) -> ParseResult<'a, Input, Output> {
+    fn parse(&self, input: A) -> ParseResult<'a, A, B> {
         self(input)
     }
 }
 
 /// Provides a boxed wrapper to any parser trait implementation. More or less,
-/// this maps a `Parser<Input, Output>` -> `Box<dyn Parser<Input, Output>>`.
-pub struct BoxedParser<'a, Input, Output> {
-    parser: Box<dyn Parser<'a, Input, Output> + 'a>,
+/// this maps a `Parser<A, B>` -> `Box<dyn Parser<A, B>>`.
+pub struct BoxedParser<'a, A, B> {
+    parser: Box<dyn Parser<'a, A, B> + 'a>,
 }
 
-impl<'a, Input, Output> BoxedParser<'a, Input, Output> {
+impl<'a, A, B> BoxedParser<'a, A, B> {
     pub fn new<P>(parser: P) -> Self
     where
-        P: Parser<'a, Input, Output> + 'a,
+        P: Parser<'a, A, B> + 'a,
     {
         BoxedParser {
             parser: Box::new(parser),
@@ -728,8 +728,8 @@ impl<'a, Input, Output> BoxedParser<'a, Input, Output> {
     }
 }
 
-impl<'a, Input, Output> Parser<'a, Input, Output> for BoxedParser<'a, Input, Output> {
-    fn parse(&self, input: Input) -> ParseResult<'a, Input, Output> {
+impl<'a, A, B> Parser<'a, A, B> for BoxedParser<'a, A, B> {
+    fn parse(&self, input: A) -> ParseResult<'a, A, B> {
         self.parser.parse(input)
     }
 }
@@ -778,12 +778,12 @@ impl<P1, P2> Or<P1, P2> {
     }
 }
 
-impl<'a, Input, Output, P1, P2> Parser<'a, Input, Output> for Or<P1, P2>
+impl<'a, A, B, P1, P2> Parser<'a, A, B> for Or<P1, P2>
 where
-    P1: Parser<'a, Input, Output>,
-    P2: Parser<'a, Input, Output>,
+    P1: Parser<'a, A, B>,
+    P2: Parser<'a, A, B>,
 {
-    fn parse(&self, input: Input) -> ParseResult<'a, Input, Output> {
+    fn parse(&self, input: A) -> ParseResult<'a, A, B> {
         match self.p1.parse(input) {
             Ok(ms) => match ms {
                 m
@@ -886,12 +886,12 @@ impl<P> OneOf<P> {
     }
 }
 
-impl<'a, Input, Output, P> Parser<'a, Input, Output> for OneOf<P>
+impl<'a, A, B, P> Parser<'a, A, B> for OneOf<P>
 where
-    Input: Copy + Borrow<Input> + 'a,
-    P: Parser<'a, Input, Output>,
+    A: Copy + Borrow<A> + 'a,
+    P: Parser<'a, A, B>,
 {
-    fn parse(&self, input: Input) -> ParseResult<'a, Input, Output> {
+    fn parse(&self, input: A) -> ParseResult<'a, A, B> {
         for parser in self.parsers.iter() {
             match parser.parse(input) {
                 Ok(ms) => match ms {
@@ -948,10 +948,10 @@ where
 ///   parcel::one_of(parsers).parse(&input)
 /// );
 /// ```
-pub fn one_of<'a, P, Input, Output>(parsers: Vec<P>) -> impl Parser<'a, Input, Output>
+pub fn one_of<'a, P, A, B>(parsers: Vec<P>) -> impl Parser<'a, A, B>
 where
-    Input: Copy + Borrow<Input> + 'a,
-    P: Parser<'a, Input, Output>,
+    A: Copy + Borrow<A> + 'a,
+    P: Parser<'a, A, B>,
 {
     OneOf::new(parsers)
 }
@@ -1102,12 +1102,12 @@ impl<P> Skip<P> {
     }
 }
 
-impl<'a, Input, Output, P> Parser<'a, Input, Output> for Skip<P>
+impl<'a, A, B, P> Parser<'a, A, B> for Skip<P>
 where
-    Input: 'a,
-    P: Parser<'a, Input, Output>,
+    A: 'a,
+    P: Parser<'a, A, B>,
 {
-    fn parse(&self, input: Input) -> ParseResult<'a, Input, Output> {
+    fn parse(&self, input: A) -> ParseResult<'a, A, B> {
         match self.parser.parse(input) {
             Ok(MatchStatus::Match {
                 span: _,
@@ -1144,10 +1144,10 @@ where
 ///   parcel::skip(expect_byte(0x00)).parse(&input)
 /// );
 /// ```
-pub fn skip<'a, P, Input, Output>(parser: P) -> impl Parser<'a, Input, Output>
+pub fn skip<'a, P, A, B>(parser: P) -> impl Parser<'a, A, B>
 where
-    Input: 'a,
-    P: Parser<'a, Input, Output>,
+    A: 'a,
+    P: Parser<'a, A, B>,
 {
     Skip::new(parser)
 }
@@ -1563,15 +1563,15 @@ impl<'a, P> TakeUntilN<P> {
     }
 }
 
-impl<'a, P, Input, Output> Parser<'a, Input, Vec<Output>> for TakeUntilN<P>
+impl<'a, P, A, B> Parser<'a, A, Vec<B>> for TakeUntilN<P>
 where
-    Input: Copy + 'a,
-    P: Parser<'a, Input, Output>,
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
 {
-    fn parse(&self, mut input: Input) -> ParseResult<'a, Input, Vec<Output>> {
+    fn parse(&self, mut input: A) -> ParseResult<'a, A, Vec<B>> {
         let mut res_cnt = 0;
         let mut span_acc: Vec<Span> = Vec::new();
-        let mut result_acc: Vec<Output> = Vec::new();
+        let mut result_acc: Vec<B> = Vec::new();
         while let Ok(MatchStatus::Match {
             span,
             remainder,
@@ -1650,13 +1650,10 @@ where
 ///   parcel::take_until_n(expect_byte(0x00), 2).parse(&input)
 /// );
 /// ```
-pub fn take_until_n<'a, P, Input, Output>(
-    parser: P,
-    n: usize,
-) -> impl Parser<'a, Input, Vec<Output>>
+pub fn take_until_n<'a, P, A, B>(parser: P, n: usize) -> impl Parser<'a, A, Vec<B>>
 where
-    Input: Copy + 'a,
-    P: Parser<'a, Input, Output>,
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
 {
     TakeUntilN::new(parser, n)
 }
@@ -1719,17 +1716,17 @@ impl<'a, P> TakeN<P> {
     }
 }
 
-impl<'a, P, Input, Output> Parser<'a, Input, Vec<Output>> for TakeN<P>
+impl<'a, P, A, B> Parser<'a, A, Vec<B>> for TakeN<P>
 where
-    Input: Copy + 'a,
-    P: Parser<'a, Input, Output>,
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
 {
-    fn parse(&self, input: Input) -> ParseResult<'a, Input, Vec<Output>> {
+    fn parse(&self, input: A) -> ParseResult<'a, A, Vec<B>> {
         let mut ni = input;
 
         let mut res_cnt = 0;
         let mut span_acc: Vec<Span> = Vec::new();
-        let mut result_acc: Vec<Output> = Vec::new();
+        let mut result_acc: Vec<B> = Vec::new();
         while let Ok(MatchStatus::Match {
             span,
             remainder,
@@ -1808,10 +1805,10 @@ where
 ///   parcel::take_n(expect_byte(0x00), 2).parse(&input)
 /// );
 /// ```
-pub fn take_n<'a, P, Input, Output>(parser: P, n: usize) -> impl Parser<'a, Input, Vec<Output>>
+pub fn take_n<'a, P, A, B>(parser: P, n: usize) -> impl Parser<'a, A, Vec<B>>
 where
-    Input: Copy + 'a,
-    P: Parser<'a, Input, Output>,
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
 {
     TakeN::new(parser, n)
 }
@@ -1867,19 +1864,19 @@ where
 /// );
 /// ```
 #[derive(Debug)]
-pub struct Predicate<P, F, Input, Output>
+pub struct Predicate<P, F, A, B>
 where
-    F: Fn(&Output) -> bool,
+    F: Fn(&B) -> bool,
 {
-    input: std::marker::PhantomData<Input>,
-    output: std::marker::PhantomData<Output>,
+    input: std::marker::PhantomData<A>,
+    output: std::marker::PhantomData<B>,
     parser: P,
     pred_case: F,
 }
 
-impl<'a, P, F, Input, Output> Predicate<P, F, Input, Output>
+impl<'a, P, F, A, B> Predicate<P, F, A, B>
 where
-    F: Fn(&Output) -> bool,
+    F: Fn(&B) -> bool,
 {
     pub fn new(parser: P, pred_case: F) -> Self {
         Self {
@@ -1891,13 +1888,13 @@ where
     }
 }
 
-impl<'a, P, F, Input, Output> Parser<'a, Input, Output> for Predicate<P, F, Input, Output>
+impl<'a, P, F, A, B> Parser<'a, A, B> for Predicate<P, F, A, B>
 where
-    Input: Copy + 'a,
-    P: Parser<'a, Input, Output>,
-    F: Fn(&Output) -> bool,
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
+    F: Fn(&B) -> bool,
 {
-    fn parse(&self, input: Input) -> ParseResult<'a, Input, Output> {
+    fn parse(&self, input: A) -> ParseResult<'a, A, B> {
         if let Ok(MatchStatus::Match {
             span,
             remainder,
@@ -1967,11 +1964,11 @@ where
 ///   ).parse(&input)
 /// );
 /// ```
-pub fn predicate<'a, P, F, Input, Output>(parser: P, pred_case: F) -> impl Parser<'a, Input, Output>
+pub fn predicate<'a, P, F, A, B>(parser: P, pred_case: F) -> impl Parser<'a, A, B>
 where
-    Input: Copy + 'a,
-    P: Parser<'a, Input, Output>,
-    F: Fn(&Output) -> bool,
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
+    F: Fn(&B) -> bool,
 {
     Predicate::new(parser, pred_case)
 }
@@ -2031,14 +2028,14 @@ impl<'a, P> ZeroOrMore<P> {
     }
 }
 
-impl<'a, P, Input, Output> Parser<'a, Input, Vec<Output>> for ZeroOrMore<P>
+impl<'a, P, A, B> Parser<'a, A, Vec<B>> for ZeroOrMore<P>
 where
-    Input: Copy + 'a,
-    P: Parser<'a, Input, Output>,
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
 {
-    fn parse(&self, mut input: Input) -> ParseResult<'a, Input, Vec<Output>> {
+    fn parse(&self, mut input: A) -> ParseResult<'a, A, Vec<B>> {
         let mut span_acc: Vec<Span> = Vec::new();
-        let mut result_acc: Vec<Output> = Vec::new();
+        let mut result_acc: Vec<B> = Vec::new();
 
         while let Ok(MatchStatus::Match {
             span,
@@ -2114,10 +2111,10 @@ where
 ///   parcel::zero_or_more(expect_byte(0x02)).parse(&input)
 /// );
 /// ```
-pub fn zero_or_more<'a, P, Input, Output>(parser: P) -> impl Parser<'a, Input, Vec<Output>>
+pub fn zero_or_more<'a, P, A, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
 where
-    Input: Copy + 'a,
-    P: Parser<'a, Input, Output>,
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
 {
     ZeroOrMore::new(parser)
 }
@@ -2177,14 +2174,14 @@ impl<'a, P> OneOrMore<P> {
     }
 }
 
-impl<'a, P, Input, Output> Parser<'a, Input, Vec<Output>> for OneOrMore<P>
+impl<'a, P, A, B> Parser<'a, A, Vec<B>> for OneOrMore<P>
 where
-    Input: Copy + 'a,
-    P: Parser<'a, Input, Output>,
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
 {
-    fn parse(&self, mut input: Input) -> ParseResult<'a, Input, Vec<Output>> {
+    fn parse(&self, mut input: A) -> ParseResult<'a, A, Vec<B>> {
         let mut span_acc: Vec<Span> = Vec::new();
-        let mut result_acc: Vec<Output> = Vec::new();
+        let mut result_acc: Vec<B> = Vec::new();
 
         while let Ok(MatchStatus::Match {
             span,
@@ -2256,10 +2253,10 @@ where
 ///   parcel::one_or_more(expect_byte(0x02)).parse(&input)
 /// );
 /// ```
-pub fn one_or_more<'a, P, Input, Output>(parser: P) -> impl Parser<'a, Input, Vec<Output>>
+pub fn one_or_more<'a, P, A, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
 where
-    Input: Copy + 'a,
-    P: Parser<'a, Input, Output>,
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
 {
     OneOrMore::new(parser)
 }
@@ -2320,12 +2317,12 @@ impl<'a, P> Optional<P> {
     }
 }
 
-impl<'a, P, Input, Output> Parser<'a, Input, Option<Output>> for Optional<P>
+impl<'a, P, A, B> Parser<'a, A, Option<B>> for Optional<P>
 where
-    Input: Copy + 'a,
-    P: Parser<'a, Input, Output>,
+    A: Copy + 'a,
+    P: Parser<'a, A, B>,
 {
-    fn parse(&self, input: Input) -> ParseResult<'a, Input, Option<Output>> {
+    fn parse(&self, input: A) -> ParseResult<'a, A, Option<B>> {
         match self.parser.parse(input) {
             Ok(MatchStatus::Match {
                 span,
