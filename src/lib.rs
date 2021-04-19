@@ -1984,6 +1984,100 @@ where
 /// let input: Vec<(usize, char)> = vec!['a', 'a', 'b'].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'a']}),
+///   parcel::ZeroOrMore::new(expect_character('a')).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..0, remainder: &input[0..], inner: vec![]}),
+///   parcel::ZeroOrMore::new(expect_character('c')).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x01].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x00]}),
+///   parcel::ZeroOrMore::new(expect_byte(0x00)).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..0, remainder: &input[0..], inner: vec![]}),
+///   parcel::ZeroOrMore::new(expect_byte(0x02)).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct ZeroOrMore<P> {
+    parser: P,
+}
+
+impl<'a, P> ZeroOrMore<P> {
+    pub fn new(parser: P) -> Self {
+        Self { parser }
+    }
+}
+
+impl<'a, P, Input, Output> Parser<'a, Input, Vec<Output>> for ZeroOrMore<P>
+where
+    Input: Copy + 'a,
+    P: Parser<'a, Input, Output>,
+{
+    fn parse(&self, mut input: Input) -> ParseResult<'a, Input, Vec<Output>> {
+        let mut span_acc: Vec<Span> = Vec::new();
+        let mut result_acc: Vec<Output> = Vec::new();
+
+        while let Ok(MatchStatus::Match {
+            span,
+            remainder,
+            inner,
+        }) = self.parser.parse(input)
+        {
+            input = remainder;
+            span_acc.push(span);
+            result_acc.push(inner);
+        }
+
+        if !result_acc.is_empty() {
+            let start = span_acc.first().unwrap().start;
+            let end = span_acc.last().unwrap().end;
+
+            Ok(MatchStatus::Match {
+                span: start..end,
+                remainder: input,
+                inner: result_acc,
+            })
+        } else {
+            Ok(MatchStatus::Match {
+                span: 0..0,
+                remainder: input,
+                inner: result_acc,
+            })
+        }
+    }
+}
+
+/// Functions much like an optional parser, consuming between zero and n values
+/// that match the specified parser `P`.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'a', 'b'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'a']}),
 ///   parcel::zero_or_more(expect_character('a')).parse(&input)
 /// );
 /// ```
@@ -2017,20 +2111,83 @@ where
 ///   parcel::zero_or_more(expect_byte(0x02)).parse(&input)
 /// );
 /// ```
-pub fn zero_or_more<'a, P, A, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
+pub fn zero_or_more<'a, P, Input, Output>(parser: P) -> impl Parser<'a, Input, Vec<Output>>
 where
-    A: Copy + 'a,
-    P: Parser<'a, A, B>,
+    Input: Copy + 'a,
+    P: Parser<'a, Input, Output>,
 {
-    move |mut input| {
+    ZeroOrMore::new(parser)
+}
+
+/// Consumes values from the input while the parser continues to return a
+/// MatchStatus::Match.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'a', 'b'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'a']}),
+///   parcel::OneOrMore::new(expect_character('a')).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   parcel::OneOrMore::new(expect_character('c')).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x01].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x00]}),
+///   parcel::OneOrMore::new(expect_byte(0x00)).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   parcel::OneOrMore::new(expect_byte(0x02)).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct OneOrMore<P> {
+    parser: P,
+}
+
+impl<'a, P> OneOrMore<P> {
+    pub fn new(parser: P) -> Self {
+        Self { parser }
+    }
+}
+
+impl<'a, P, Input, Output> Parser<'a, Input, Vec<Output>> for OneOrMore<P>
+where
+    Input: Copy + 'a,
+    P: Parser<'a, Input, Output>,
+{
+    fn parse(&self, mut input: Input) -> ParseResult<'a, Input, Vec<Output>> {
         let mut span_acc: Vec<Span> = Vec::new();
-        let mut result_acc: Vec<B> = Vec::new();
+        let mut result_acc: Vec<Output> = Vec::new();
 
         while let Ok(MatchStatus::Match {
             span,
             remainder,
             inner,
-        }) = parser.parse(input)
+        }) = self.parser.parse(input)
         {
             input = remainder;
             span_acc.push(span);
@@ -2047,11 +2204,7 @@ where
                 inner: result_acc,
             })
         } else {
-            Ok(MatchStatus::Match {
-                span: 0..0,
-                remainder: input,
-                inner: result_acc,
-            })
+            Ok(MatchStatus::NoMatch(input))
         }
     }
 }
@@ -2100,39 +2253,12 @@ where
 ///   parcel::one_or_more(expect_byte(0x02)).parse(&input)
 /// );
 /// ```
-pub fn one_or_more<'a, P, A, B>(parser: P) -> impl Parser<'a, A, Vec<B>>
+pub fn one_or_more<'a, P, Input, Output>(parser: P) -> impl Parser<'a, Input, Vec<Output>>
 where
-    A: Copy + 'a,
-    P: Parser<'a, A, B>,
+    Input: Copy + 'a,
+    P: Parser<'a, Input, Output>,
 {
-    move |mut input| {
-        let mut span_acc: Vec<Span> = Vec::new();
-        let mut result_acc: Vec<B> = Vec::new();
-
-        while let Ok(MatchStatus::Match {
-            span,
-            remainder,
-            inner,
-        }) = parser.parse(input)
-        {
-            input = remainder;
-            span_acc.push(span);
-            result_acc.push(inner);
-        }
-
-        if !result_acc.is_empty() {
-            let start = span_acc.first().unwrap().start;
-            let end = span_acc.last().unwrap().end;
-
-            Ok(MatchStatus::Match {
-                span: start..end,
-                remainder: input,
-                inner: result_acc,
-            })
-        } else {
-            Ok(MatchStatus::NoMatch(input))
-        }
-    }
+    OneOrMore::new(parser)
 }
 
 /// Provides optional matching of a value, returning `Parser<A, Option<B>>`.
