@@ -1517,6 +1517,105 @@ where
 /// let input: Vec<(usize, char)> = vec!['a', 'a', 'a'].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'a']}),
+///   parcel::TakeUntilN::new(expect_character('a'), 2).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: vec!['a']}),
+///   parcel::TakeUntilN::new(expect_character('a'), 2).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x00].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x00]}),
+///   parcel::TakeUntilN::new(expect_byte(0x00), 2).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input = vec![0x00, 0x01, 0x02];
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: vec![0x00]}),
+///   parcel::TakeUntilN::new(expect_byte(0x00), 2).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct TakeUntilN<P> {
+    parser: P,
+    n: usize,
+}
+
+impl<'a, P> TakeUntilN<P> {
+    pub fn new(parser: P, n: usize) -> Self {
+        Self { parser, n }
+    }
+}
+
+impl<'a, P, Input, Output> Parser<'a, Input, Vec<Output>> for TakeUntilN<P>
+where
+    Input: Copy + 'a,
+    P: Parser<'a, Input, Output>,
+{
+    fn parse(&self, mut input: Input) -> ParseResult<'a, Input, Vec<Output>> {
+        let mut res_cnt = 0;
+        let mut span_acc: Vec<Span> = Vec::new();
+        let mut result_acc: Vec<Output> = Vec::new();
+        while let Ok(MatchStatus::Match {
+            span,
+            remainder,
+            inner,
+        }) = self.parser.parse(input)
+        {
+            if res_cnt < self.n {
+                input = remainder;
+                span_acc.push(span);
+                result_acc.push(inner);
+                res_cnt += 1;
+            } else {
+                break;
+            }
+        }
+
+        if res_cnt > 0 {
+            // these are safe to unwrap due to the res_cnt gate.
+            let start = span_acc.first().unwrap().start;
+            let end = span_acc.last().unwrap().end;
+
+            Ok(MatchStatus::Match {
+                span: start..end,
+                remainder: input,
+                inner: result_acc,
+            })
+        } else {
+            Ok(MatchStatus::NoMatch(input))
+        }
+    }
+}
+
+/// This attempts to consume until n matches have occured. A match is returned
+/// if 1 < result count <= n. Functionally this behaves like a bounded version
+/// of the `one_or_more` parser.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'a', 'a'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'a']}),
 ///   parcel::take_until_n(expect_character('a'), 2).parse(&input)
 /// );
 /// ```
@@ -1551,23 +1650,91 @@ where
 ///   parcel::take_until_n(expect_byte(0x00), 2).parse(&input)
 /// );
 /// ```
-pub fn take_until_n<'a, P, A, B>(parser: P, n: usize) -> impl Parser<'a, A, Vec<B>>
+pub fn take_until_n<'a, P, A, B>(parser: P, n: usize) -> TakeUntilN<P>
 where
     A: Copy + 'a,
     P: Parser<'a, A, B>,
 {
-    move |mut input| {
+    TakeUntilN::new(parser, n)
+}
+
+/// `take_n` must match exactly n sequential matches of parser: `P` otherwise
+/// `NoMatch` is returned. On a match, a `Vec` of the results is returned.
+/// Functionally this behaves like the `take_until_n` parser with a single
+/// expected match count.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'a', 'a'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'a']}),
+///   parcel::TakeN::new(expect_character('a'), 2).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   parcel::TakeN::new(expect_character('a'), 2).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x00, 0x00].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x00]}),
+///   parcel::TakeN::new(expect_byte(0x00), 2).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   parcel::TakeN::new(expect_byte(0x00), 2).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct TakeN<P> {
+    parser: P,
+    n: usize,
+}
+
+impl<'a, P> TakeN<P> {
+    pub fn new(parser: P, n: usize) -> Self {
+        Self { parser, n }
+    }
+}
+
+impl<'a, P, Input, Output> Parser<'a, Input, Vec<Output>> for TakeN<P>
+where
+    Input: Copy + 'a,
+    P: Parser<'a, Input, Output>,
+{
+    fn parse(&self, input: Input) -> ParseResult<'a, Input, Vec<Output>> {
+        let mut ni = input;
+
         let mut res_cnt = 0;
         let mut span_acc: Vec<Span> = Vec::new();
-        let mut result_acc: Vec<B> = Vec::new();
+        let mut result_acc: Vec<Output> = Vec::new();
         while let Ok(MatchStatus::Match {
             span,
             remainder,
             inner,
-        }) = parser.parse(input)
+        }) = self.parser.parse(ni)
         {
-            if res_cnt < n {
-                input = remainder;
+            if res_cnt < self.n {
+                ni = remainder;
                 span_acc.push(span);
                 result_acc.push(inner);
                 res_cnt += 1;
@@ -1576,14 +1743,14 @@ where
             }
         }
 
-        if res_cnt > 0 {
+        if res_cnt == self.n {
             // these are safe to unwrap due to the res_cnt gate.
             let start = span_acc.first().unwrap().start;
             let end = span_acc.last().unwrap().end;
 
             Ok(MatchStatus::Match {
                 span: start..end,
-                remainder: input,
+                remainder: ni,
                 inner: result_acc,
             })
         } else {
