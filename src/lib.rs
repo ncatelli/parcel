@@ -1826,6 +1826,107 @@ where
 /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
+///   parcel::Predicate::new(any_character(), |&c| c != 'c').parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::any_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec!['a', 'b']}),
+///   parcel::one_or_more(
+///       parcel::Predicate::new(any_character(), |&c| c != 'c')
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::any_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
+///   parcel::predicate(any_byte(), |&b| b != 0x02).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::any_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: vec![0x00, 0x01]}),
+///   parcel::one_or_more(
+///       parcel::Predicate::new(any_byte(), |&b| b != 0x02)
+///   ).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct Predicate<P, F, Input, Output>
+where
+    F: Fn(&Output) -> bool,
+{
+    input: std::marker::PhantomData<Input>,
+    output: std::marker::PhantomData<Output>,
+    parser: P,
+    pred_case: F,
+}
+
+impl<'a, P, F, Input, Output> Predicate<P, F, Input, Output>
+where
+    F: Fn(&Output) -> bool,
+{
+    pub fn new(parser: P, pred_case: F) -> Self {
+        Self {
+            input: std::marker::PhantomData,
+            output: std::marker::PhantomData,
+            parser,
+            pred_case,
+        }
+    }
+}
+
+impl<'a, P, F, Input, Output> Parser<'a, Input, Output> for Predicate<P, F, Input, Output>
+where
+    Input: Copy + 'a,
+    P: Parser<'a, Input, Output>,
+    F: Fn(&Output) -> bool,
+{
+    fn parse(&self, input: Input) -> ParseResult<'a, Input, Output> {
+        if let Ok(MatchStatus::Match {
+            span,
+            remainder,
+            inner,
+        }) = self.parser.parse(input)
+        {
+            if (self.pred_case)(&inner) {
+                return Ok(MatchStatus::Match {
+                    span,
+                    remainder,
+                    inner,
+                });
+            }
+        }
+
+        Ok(MatchStatus::NoMatch(input))
+    }
+}
+
+/// Functions much like a peek combinator in that it takes a parser `P<A, B>`
+/// and a closure that accepts `&B`. The parser will only return a match if `F
+/// asserts a match. This is useful for cases of `one_or_more` or
+/// `zero_or_more` where a match must terminate.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::any_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
 ///   parcel::predicate(any_character(), |&c| c != 'c').parse(&input)
 /// );
 /// ```
@@ -1863,29 +1964,13 @@ where
 ///   ).parse(&input)
 /// );
 /// ```
-pub fn predicate<'a, P, A, B, F>(parser: P, pred_case: F) -> impl Parser<'a, A, B>
+pub fn predicate<'a, P, F, Input, Output>(parser: P, pred_case: F) -> Predicate<P, F, Input, Output>
 where
-    A: Copy + 'a,
-    P: Parser<'a, A, B>,
-    F: Fn(&B) -> bool,
+    Input: Copy + 'a,
+    P: Parser<'a, Input, Output>,
+    F: Fn(&Output) -> bool,
 {
-    move |input| {
-        if let Ok(MatchStatus::Match {
-            span,
-            remainder,
-            inner,
-        }) = parser.parse(input)
-        {
-            if pred_case(&inner) {
-                return Ok(MatchStatus::Match {
-                    span,
-                    remainder,
-                    inner,
-                });
-            }
-        }
-        Ok(MatchStatus::NoMatch(input))
-    }
+    Predicate::new(parser, pred_case)
 }
 
 /// Functions much like an optional parser, consuming between zero and n values
