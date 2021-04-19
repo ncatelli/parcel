@@ -1336,6 +1336,121 @@ where
 /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
+///   parcel::PeekNext::new(
+///       expect_character('a'),
+///       expect_character('b'),
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   parcel::PeekNext::new(
+///       expect_character('a'),
+///       expect_character('c'),
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
+///   parcel::PeekNext::new(
+///       expect_byte(0x00),
+///       expect_byte(0x01),
+///   ).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   parcel::PeekNext::new(
+///       expect_byte(0x00),
+///       expect_byte(0x02),
+///   ).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct PeekNext<P1, P2, A, B, C> {
+    input: std::marker::PhantomData<A>,
+    output_one: std::marker::PhantomData<B>,
+    output_two: std::marker::PhantomData<C>,
+    parser1: P1,
+    parser2: P2,
+}
+
+impl<'a, P1, P2, A, B, C> PeekNext<P1, P2, A, B, C> {
+    pub fn new(parser1: P1, parser2: P2) -> Self {
+        Self {
+            input: std::marker::PhantomData,
+            output_one: std::marker::PhantomData,
+            output_two: std::marker::PhantomData,
+            parser1,
+            parser2,
+        }
+    }
+}
+
+impl<'a, P1, P2, A, B, C> Parser<'a, A, B> for PeekNext<P1, P2, A, B, C>
+where
+    A: Copy + Borrow<A> + 'a,
+    P1: Parser<'a, A, B>,
+    P2: Parser<'a, A, C>,
+{
+    fn parse(&self, input: A) -> ParseResult<'a, A, B> {
+        match self.parser1.parse(input) {
+            Ok(ms) => match ms {
+                MatchStatus::Match {
+                    span,
+                    remainder,
+                    inner,
+                } => {
+                    let initial_input = remainder;
+                    if let Ok(MatchStatus::Match {
+                        span: _,
+                        remainder: _,
+                        inner: _,
+                    }) = self.parser2.parse(initial_input)
+                    {
+                        Ok(MatchStatus::Match {
+                            span,
+                            remainder,
+                            inner,
+                        })
+                    } else {
+                        Ok(MatchStatus::NoMatch(input))
+                    }
+                }
+                MatchStatus::NoMatch(last_input) => Ok(MatchStatus::NoMatch(last_input)),
+            },
+            Err(e) => Err(e),
+        }
+    }
+}
+
+/// Returns a match if Parser<A, B> matches and then Parser<A, C> matches,
+/// returning the results of the first parser without consuming the second
+/// value.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
 ///   parcel::peek_next(
 ///       expect_character('a'),
 ///       expect_character('b'),
@@ -1381,39 +1496,13 @@ where
 ///   ).parse(&input)
 /// );
 /// ```
-pub fn peek_next<'a, P1, P2, A, B, C>(first: P1, second: P2) -> impl Parser<'a, A, B>
+pub fn peek_next<'a, P1, P2, A, B, C>(first: P1, second: P2) -> PeekNext<P1, P2, A, B, C>
 where
     A: Copy + Borrow<A> + 'a,
     P1: Parser<'a, A, B>,
     P2: Parser<'a, A, C>,
 {
-    move |input| match first.parse(input) {
-        Ok(ms) => match ms {
-            MatchStatus::Match {
-                span,
-                remainder,
-                inner,
-            } => {
-                let initial_input = remainder;
-                if let Ok(MatchStatus::Match {
-                    span: _,
-                    remainder: _,
-                    inner: _,
-                }) = second.parse(initial_input)
-                {
-                    Ok(MatchStatus::Match {
-                        span,
-                        remainder,
-                        inner,
-                    })
-                } else {
-                    Ok(MatchStatus::NoMatch(input))
-                }
-            }
-            MatchStatus::NoMatch(last_input) => Ok(MatchStatus::NoMatch(last_input)),
-        },
-        Err(e) => Err(e),
-    }
+    PeekNext::new(first, second)
 }
 
 /// This attempts to consume until n matches have occured. A match is returned
