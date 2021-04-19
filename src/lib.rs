@@ -2409,6 +2409,71 @@ where
 /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: ('a', 'b')}),
+///   parcel::Join::new(expect_character('a'), expect_character('b')).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: (0x00, 0x01)}),
+///   parcel::Join::new(expect_byte(0x00), expect_byte(0x01)).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct Join<P1, P2> {
+    parser1: P1,
+    parser2: P2,
+}
+
+impl<'a, P1, P2> Join<P1, P2> {
+    pub fn new(parser1: P1, parser2: P2) -> Self {
+        Self { parser1, parser2 }
+    }
+}
+
+impl<'a, P1, P2, A, B, C> Parser<'a, A, (B, C)> for Join<P1, P2>
+where
+    A: Copy + Borrow<A> + 'a,
+    P1: Parser<'a, A, B>,
+    P2: Parser<'a, A, C>,
+{
+    fn parse(&self, input: A) -> ParseResult<'a, A, (B, C)> {
+        self.parser1.parse(input).and_then(|p1_ms| match p1_ms {
+            MatchStatus::NoMatch(rem) => Ok(MatchStatus::NoMatch(rem)),
+            MatchStatus::Match {
+                span: p1_span,
+                remainder: p1_remainder,
+                inner: p1_inner,
+            } => self.parser2.parse(p1_remainder).map(|p2_ms| match p2_ms {
+                MatchStatus::NoMatch(_) => MatchStatus::NoMatch(input),
+                MatchStatus::Match {
+                    span: p2_span,
+                    remainder: p2_remainder,
+                    inner: p2_inner,
+                } => MatchStatus::Match {
+                    span: p1_span.start..p2_span.end,
+                    remainder: p2_remainder,
+                    inner: (p1_inner, p2_inner),
+                },
+            }),
+        })
+    }
+}
+
+/// Join attempts to match `Parser<A, B>` and `Parser<A, C>` after which it merges
+/// the results to `Parser<A, (B, C)>`.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: ('a', 'b')}),
 ///   parcel::join(expect_character('a'), expect_character('b')).parse(&input)
 /// );
 /// ```
@@ -2428,27 +2493,7 @@ where
     P1: Parser<'a, A, B>,
     P2: Parser<'a, A, C>,
 {
-    move |input| {
-        parser1.parse(input).and_then(|p1_ms| match p1_ms {
-            MatchStatus::NoMatch(rem) => Ok(MatchStatus::NoMatch(rem)),
-            MatchStatus::Match {
-                span: p1_span,
-                remainder: p1_remainder,
-                inner: p1_inner,
-            } => parser2.parse(p1_remainder).map(|p2_ms| match p2_ms {
-                MatchStatus::NoMatch(_) => MatchStatus::NoMatch(input),
-                MatchStatus::Match {
-                    span: p2_span,
-                    remainder: p2_remainder,
-                    inner: p2_inner,
-                } => MatchStatus::Match {
-                    span: p1_span.start..p2_span.end,
-                    remainder: p2_remainder,
-                    inner: (p1_inner, p2_inner),
-                },
-            }),
-        })
-    }
+    Join::new(parser1, parser2)
 }
 
 /// Left expects to take the results of join, returning a Parser<A, (B, C)>
