@@ -2273,6 +2273,88 @@ where
 /// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: Some('a')}),
+///   parcel::Optional::new(expect_character('a')).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..0, remainder: &input[0..], inner: None}),
+///   parcel::Optional::new(expect_character('c')).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: Some(0x00)}),
+///   parcel::Optional::new(expect_byte(0x00)).parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::byte::expect_byte;
+/// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..0, remainder: &input[0..], inner: None}),
+///   parcel::Optional::new(expect_byte(0x02)).parse(&input)
+/// );
+/// ```
+#[derive(Debug)]
+pub struct Optional<P> {
+    parser: P,
+}
+
+impl<'a, P> Optional<P> {
+    pub fn new(parser: P) -> Self {
+        Self { parser }
+    }
+}
+
+impl<'a, P, Input, Output> Parser<'a, Input, Option<Output>> for Optional<P>
+where
+    Input: Copy + 'a,
+    P: Parser<'a, Input, Output>,
+{
+    fn parse(&self, input: Input) -> ParseResult<'a, Input, Option<Output>> {
+        match self.parser.parse(input) {
+            Ok(MatchStatus::Match {
+                span,
+                remainder,
+                inner,
+            }) => Ok(MatchStatus::Match {
+                span,
+                remainder,
+                inner: Some(inner),
+            }),
+            Ok(MatchStatus::NoMatch(last_input)) => Ok(MatchStatus::Match {
+                span: 0..0,
+                remainder: last_input,
+                inner: None,
+            }),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+/// Provides optional matching of a value, returning `Parser<A, Option<B>>`.
+/// For cases where the value is not present, a match with a `None` value is
+/// returned. Otherwise a match with a `Some<B>` is returned.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: Some('a')}),
 ///   parcel::optional(expect_character('a')).parse(&input)
 /// );
 /// ```
@@ -2311,23 +2393,7 @@ where
     A: Copy + 'a,
     P: Parser<'a, A, B>,
 {
-    move |input| match parser.parse(input) {
-        Ok(MatchStatus::Match {
-            span,
-            remainder,
-            inner,
-        }) => Ok(MatchStatus::Match {
-            span,
-            remainder,
-            inner: Some(inner),
-        }),
-        Ok(MatchStatus::NoMatch(last_input)) => Ok(MatchStatus::Match {
-            span: 0..0,
-            remainder: last_input,
-            inner: None,
-        }),
-        Err(e) => Err(e),
-    }
+    Optional::new(parser)
 }
 
 // Applicatives
