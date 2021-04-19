@@ -1650,10 +1650,10 @@ where
 ///   parcel::take_until_n(expect_byte(0x00), 2).parse(&input)
 /// );
 /// ```
-pub fn take_until_n<'a, P, A, B>(parser: P, n: usize) -> TakeUntilN<P>
+pub fn take_until_n<'a, P, Input, Output>(parser: P, n: usize) -> TakeUntilN<P>
 where
-    A: Copy + 'a,
-    P: Parser<'a, A, B>,
+    Input: Copy + 'a,
+    P: Parser<'a, Input, Output>,
 {
     TakeUntilN::new(parser, n)
 }
@@ -1805,47 +1805,12 @@ where
 ///   parcel::take_n(expect_byte(0x00), 2).parse(&input)
 /// );
 /// ```
-pub fn take_n<'a, P, A, B>(parser: P, n: usize) -> impl Parser<'a, A, Vec<B>>
+pub fn take_n<'a, P, Input, Output>(parser: P, n: usize) -> TakeN<P>
 where
-    A: Copy + 'a,
-    P: Parser<'a, A, B>,
+    Input: Copy + 'a,
+    P: Parser<'a, Input, Output>,
 {
-    move |input| {
-        let mut ni: A = input;
-
-        let mut res_cnt = 0;
-        let mut span_acc: Vec<Span> = Vec::new();
-        let mut result_acc: Vec<B> = Vec::new();
-        while let Ok(MatchStatus::Match {
-            span,
-            remainder,
-            inner,
-        }) = parser.parse(ni)
-        {
-            if res_cnt < n {
-                ni = remainder;
-                span_acc.push(span);
-                result_acc.push(inner);
-                res_cnt += 1;
-            } else {
-                break;
-            }
-        }
-
-        if res_cnt == n {
-            // these are safe to unwrap due to the res_cnt gate.
-            let start = span_acc.first().unwrap().start;
-            let end = span_acc.last().unwrap().end;
-
-            Ok(MatchStatus::Match {
-                span: start..end,
-                remainder: ni,
-                inner: result_acc,
-            })
-        } else {
-            Ok(MatchStatus::NoMatch(input))
-        }
-    }
+    TakeN::new(parser, n)
 }
 
 /// Functions much like a peek combinator in that it takes a parser `P<A, B>`
