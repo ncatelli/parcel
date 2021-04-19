@@ -222,13 +222,13 @@ pub trait Parser<'a, A, B> {
     ///       })).parse(&input)
     /// );
     /// ```
-    fn and_then<F, NextParser, NewB>(self, thunk: F) -> BoxedParser<'a, A, NewB>
+    fn and_then<F, NextParser, C>(self, thunk: F) -> BoxedParser<'a, A, C>
     where
         Self: Sized + 'a,
         A: 'a,
         B: 'a,
-        NewB: 'a,
-        NextParser: Parser<'a, A, NewB> + 'a,
+        C: 'a,
+        NextParser: Parser<'a, A, C> + 'a,
         F: Fn(B) -> NextParser + 'a,
     {
         BoxedParser::new(and_then(self, thunk))
@@ -287,13 +287,13 @@ pub trait Parser<'a, A, B> {
     ///         .parse(&input[0..])
     /// );
     /// ```
-    fn peek_next<NextParser, NewB>(self, second: NextParser) -> BoxedParser<'a, A, B>
+    fn peek_next<NextParser, C>(self, second: NextParser) -> BoxedParser<'a, A, B>
     where
         Self: Sized + 'a,
         A: Copy + Borrow<A> + 'a,
         B: 'a,
-        NewB: 'a,
-        NextParser: Parser<'a, A, NewB> + 'a,
+        C: 'a,
+        NextParser: Parser<'a, A, C> + 'a,
     {
         BoxedParser::new(peek_next(self, second))
     }
@@ -601,13 +601,13 @@ pub trait Parser<'a, A, B> {
     ///   ).parse(&input)
     /// );
     /// ```
-    fn map<F, NewB>(self, map_fn: F) -> BoxedParser<'a, A, NewB>
+    fn map<F, C>(self, map_fn: F) -> BoxedParser<'a, A, C>
     where
         Self: Sized + 'a,
         A: 'a,
         B: 'a,
-        NewB: 'a,
-        F: Fn(B) -> NewB + 'a,
+        C: 'a,
+        F: Fn(B) -> C + 'a,
     {
         BoxedParser::new(map(self, map_fn))
     }
