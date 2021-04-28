@@ -6,6 +6,7 @@
 
 pub mod parsers;
 pub mod prelude;
+pub mod util;
 
 #[cfg(test)]
 mod tests;
