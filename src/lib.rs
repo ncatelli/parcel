@@ -4,9 +4,9 @@
 //! recommend against using it for anything other than experimentation.
 //! Instead, recommending Geal/nom.
 
+pub mod formatter;
 pub mod parsers;
 pub mod prelude;
-pub mod util;
 
 #[cfg(test)]
 mod tests;
