@@ -4,6 +4,7 @@
 //! recommend against using it for anything other than experimentation.
 //! Instead, recommending Geal/nom.
 
+pub mod formatter;
 pub mod parsers;
 pub mod prelude;
 
@@ -12,6 +13,8 @@ mod tests;
 
 use std::borrow::Borrow;
 
+/// Span defines represents a range that covers the indexes into an input that
+/// a given pattern matches.
 pub type Span = std::ops::Range<usize>;
 
 /// MatchStatus represents a non-error parser result with two cases, signifying
@@ -56,7 +59,7 @@ impl<U, T> MatchStatus<U, T> {
     /// Returns the contained `Match` value, consuming the `self` value.
     ///
     /// Arguments passed to `unwrap_or` are eagerly evaluated; if you are passing
-    /// the result of a function call, it is recommended to use [`unwrap_or_else`],
+    /// the result of a function call, it is recommended to use `unwrap_or_else`,
     /// which is lazily evaluated.
     ///
     /// # Examples
@@ -2557,17 +2560,17 @@ where
     P: Parser<'a, A, (B, C)> + 'a,
 {
     fn parse(&self, input: A) -> ParseResult<'a, A, B> {
-        self.parser.parse(input).and_then(|ms| match ms {
-            MatchStatus::NoMatch(rem) => Ok(MatchStatus::NoMatch(rem)),
+        self.parser.parse(input).map(|ms| match ms {
+            MatchStatus::NoMatch(rem) => MatchStatus::NoMatch(rem),
             MatchStatus::Match {
                 span,
                 remainder,
                 inner,
-            } => Ok(MatchStatus::Match {
-                span: span,
-                remainder: remainder,
+            } => MatchStatus::Match {
+                span,
+                remainder,
                 inner: inner.0,
-            }),
+            },
         })
     }
 }
@@ -2677,17 +2680,17 @@ where
     P: Parser<'a, A, (B, C)> + 'a,
 {
     fn parse(&self, input: A) -> ParseResult<'a, A, C> {
-        self.parser.parse(input).and_then(|ms| match ms {
-            MatchStatus::NoMatch(rem) => Ok(MatchStatus::NoMatch(rem)),
+        self.parser.parse(input).map(|ms| match ms {
+            MatchStatus::NoMatch(rem) => MatchStatus::NoMatch(rem),
             MatchStatus::Match {
                 span,
                 remainder,
                 inner,
-            } => Ok(MatchStatus::Match {
-                span: span,
-                remainder: remainder,
+            } => MatchStatus::Match {
+                span,
+                remainder,
                 inner: inner.1,
-            }),
+            },
         })
     }
 }
