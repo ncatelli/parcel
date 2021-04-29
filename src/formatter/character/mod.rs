@@ -45,12 +45,12 @@ impl From<(usize, usize)> for Cursor {
 /// use parcel::formatter::SpanFormatter;
 /// use parcel::formatter::character::{TextFormatter, Cursor};
 /// use parcel::Span;
-
+///
 /// let input: Vec<char> = "abcdef\nghijk\nlmnopqrstuvwxyz".chars().collect();
 /// let ms = parcel::MatchStatus::Match{span: 15..16, remainder: &input[16..], inner: 'n'};
 /// let span = ms.as_span().unwrap();
 /// let text_formatter = TextFormatter::new('\n');
-
+///
 /// assert_eq!(
 ///   Ok(Cursor::new(2, 2)..Cursor::new(2, 3)),
 ///   text_formatter.format_from_span(span, &input)
