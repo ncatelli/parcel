@@ -61,7 +61,7 @@ impl<'a> SpanFormatter<&'a [char], std::ops::Range<(usize, usize)>> for TextForm
         input: &'a [char],
     ) -> Result<std::ops::Range<(usize, usize)>, SpanFormatterErr> {
         if input.len() < span.end {
-            Err(SpanFormatterErr::InputLengthExceeded(span))
+            Err(SpanFormatterErr::OutOfBounds(span))
         } else {
             let start = (&input[0..span.start])
                 .iter()

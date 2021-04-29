@@ -2,16 +2,18 @@
 /// output from a span.
 #[derive(Debug, Clone, PartialEq)]
 pub enum SpanFormatterErr {
-    InputLengthExceeded(crate::Span),
+    /// OutOfBounds represents a case where a span extends over the bounds of an
+    /// input.
+    OutOfBounds(crate::Span),
 }
 
 impl std::fmt::Display for SpanFormatterErr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SpanFormatterErr::InputLengthExceeded(span) => {
+            SpanFormatterErr::OutOfBounds(span) => {
                 write!(
                     f,
-                    "requested span(start: {}, end: {}) overruns the input length",
+                    "span(start: {}, end: {}) overruns the input bounds",
                     span.start, span.end
                 )
             }
