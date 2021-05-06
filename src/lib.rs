@@ -122,6 +122,61 @@ impl<U, T> MatchStatus<U, T> {
             _ => None,
         }
     }
+
+    /// This method transforms type `parcel::MatchStatus<U, T>` to type
+    /// `Option<T>`. If the type is of the `Match` variant `Option::Some(T)` is
+    /// returned otherwise `Option::None`. is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let input = vec!['a'];
+    /// assert_eq!(
+    ///   Some('a'),
+    ///   parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}.is_match()
+    ///  );
+    /// ```
+    pub fn is_match(self) -> Option<T> {
+        match self {
+            MatchStatus::Match {
+                span: _,
+                remainder: _,
+                inner,
+            } => Some(inner),
+            MatchStatus::NoMatch(_) => None,
+        }
+    }
+
+    /// This method transforms type `parcel::MatchStatus<U, T>` to type
+    /// `parcel::MatchStatus<U, V>` via a closure, map_fn, allowing
+    /// transformation ofthe result from `T -> V`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let input = vec!['a'];
+    /// assert_eq!(
+    ///   parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: true},
+    ///   parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}.map(|c| c.is_ascii())
+    ///  );
+    /// ```
+    pub fn map<V, F>(self, map_fn: F) -> MatchStatus<U, V>
+    where
+        F: Fn(T) -> V,
+    {
+        match self {
+            MatchStatus::Match {
+                span,
+                remainder,
+                inner,
+            } => MatchStatus::Match {
+                span,
+                remainder,
+                inner: map_fn(inner),
+            },
+            MatchStatus::NoMatch(rem) => MatchStatus::NoMatch(rem),
+        }
+    }
 }
 
 /// Represents the state of parser execution, wrapping the above
