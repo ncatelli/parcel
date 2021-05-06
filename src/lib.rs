@@ -131,7 +131,6 @@ impl<U, T> MatchStatus<U, T> {
     ///
     /// ```
     /// let input = vec!['a'];
-    /// let v = parcel::MatchStatus::<&[char], char>::Match{span: 0..1, remainder: &input[1..], inner: 'a'};
     /// assert_eq!(
     ///   Some('a'),
     ///   parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}.is_match()
