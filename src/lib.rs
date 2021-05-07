@@ -162,7 +162,7 @@ impl<U, T> MatchStatus<U, T> {
     /// ```
     pub fn map<V, F>(self, map_fn: F) -> MatchStatus<U, V>
     where
-        F: Fn(T) -> V,
+        F: FnOnce(T) -> V,
     {
         match self {
             MatchStatus::Match {
@@ -174,6 +174,42 @@ impl<U, T> MatchStatus<U, T> {
                 remainder,
                 inner: map_fn(inner),
             },
+            MatchStatus::NoMatch(rem) => MatchStatus::NoMatch(rem),
+        }
+    }
+
+    /// This method transforms type `parcel::MatchStatus<U, T>` to type
+    /// `parcel::MatchStatus<U, V>` via a closure, map_fn, which is called only
+    /// for cases of `Match`. Allowing for addition countrol of the match
+    /// variant from within the closure.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let input = vec!['a'];
+    /// assert_eq!(
+    ///   parcel::MatchStatus::Match{
+    ///     span: 0..1,
+    ///     remainder: &input[1..],
+    ///     inner: true,
+    ///   },
+    ///   parcel::MatchStatus::Match{
+    ///     span: 0..1,
+    ///     remainder: &input[1..],
+    ///     inner: 'a'
+    ///   }.and_then(|ms| parcel::MatchStatus::Match{
+    ///     span: 0..1,
+    ///     remainder: &input[1..],
+    ///     inner: true,
+    ///   })
+    ///  );
+    /// ```
+    pub fn and_then<V, F>(self, map_fn: F) -> MatchStatus<U, V>
+    where
+        F: FnOnce(Self) -> MatchStatus<U, V>,
+    {
+        match self {
+            ms @ MatchStatus::Match { .. } => map_fn(ms),
             MatchStatus::NoMatch(rem) => MatchStatus::NoMatch(rem),
         }
     }
