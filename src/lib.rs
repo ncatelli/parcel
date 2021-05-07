@@ -133,10 +133,10 @@ impl<U, T> MatchStatus<U, T> {
     /// let input = vec!['a'];
     /// assert_eq!(
     ///   Some('a'),
-    ///   parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}.is_match()
+    ///   parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}.some()
     ///  );
     /// ```
-    pub fn is_match(self) -> Option<T> {
+    pub fn some(self) -> Option<T> {
         match self {
             MatchStatus::Match {
                 span: _,
