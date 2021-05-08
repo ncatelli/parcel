@@ -256,12 +256,13 @@ pub trait Parser<'a, A, B> {
     ///   expect_byte(0x01).or(|| expect_byte(0x00)).parse(&input)
     /// );
     /// ```
-    fn or<P>(self, thunk: impl Fn() -> P + 'a) -> BoxedParser<'a, A, B>
+    fn or<P, F>(self, thunk: F) -> BoxedParser<'a, A, B>
     where
         Self: Sized + 'a,
         A: Copy + 'a,
         B: 'a,
         P: Parser<'a, A, B> + 'a,
+        F: Fn() -> P + 'a,
     {
         BoxedParser::new(or(self, thunk))
     }
@@ -924,11 +925,12 @@ where
 ///   parcel::or(expect_byte(0x01), || expect_byte(0x00)).parse(&input)
 /// );
 /// ```
-pub fn or<'a, P1, P2, A, B>(parser1: P1, thunk_to_parser: impl Fn() -> P2) -> impl Parser<'a, A, B>
+pub fn or<'a, P1, P2, F, A, B>(parser1: P1, thunk_to_parser: F) -> impl Parser<'a, A, B>
 where
     A: Copy + 'a + Borrow<A>,
     P1: Parser<'a, A, B>,
     P2: Parser<'a, A, B>,
+    F: Fn() -> P2,
 {
     Or::new(parser1, thunk_to_parser())
 }
