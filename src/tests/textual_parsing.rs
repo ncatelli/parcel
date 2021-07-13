@@ -2,18 +2,40 @@ use crate::parsers::character::{any_character, expect_character};
 use crate::prelude::v1::*;
 use crate::{predicate, take_until_n};
 
+macro_rules! assert_parser {
+    {should parse $input:literal using $parser:expr => $output:expr} => {
+        let input_vec: Vec<(usize, char)> = $input.chars().enumerate.collect();
+        let input_len = input_vec.len();
+
+        assert_eq!(
+            Ok(MatchStatus::Match {
+                span: 0..input_len,
+                remainder: &input_vec[input_len..],
+                inner: $output
+            }),
+            $parser.parse(&input_vec[..])
+        );
+    };
+    {should parse $elements:literal elements from $input:literal using $parser:expr => $output:expr} => {
+        let input_vec: Vec<(usize, char)> = $input.chars().enumerate().collect();
+
+        assert_eq!(
+            Ok(MatchStatus::Match {
+                span: 0..$elements,
+                remainder: &input_vec[$elements..],
+                inner: $output
+            }),
+            $parser.parse(&input_vec[..])
+        );
+    };
+    {should parse $elements:literal element from $input:literal using $parser:expr => $output:expr} => {
+        assert_parser!(should parse $elements elements from $input using $parser => $output);
+    };
+}
+
 #[test]
 fn parser_should_parse_char_match() {
-    let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
-
-    assert_eq!(
-        Ok(MatchStatus::Match {
-            span: 0..1,
-            remainder: &input[1..],
-            inner: 'a'
-        }),
-        expect_character('a').parse(&input[0..])
-    );
+    assert_parser!(should parse 1 element from "abc" using expect_character('a') => 'a');
 }
 
 #[test]
