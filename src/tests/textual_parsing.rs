@@ -31,6 +31,16 @@ macro_rules! assert_parser {
     {should parse $elements:literal element from $input:literal using $parser:expr => $output:expr} => {
         assert_parser!(should parse $elements elements from $input using $parser => $output);
     };
+
+    // No Match
+    {should not parse $input:literal using $parser:expr} => {
+        let input_vec: Vec<(usize, char)> = $input.chars().enumerate().collect();
+
+        assert_eq!(
+            Ok(MatchStatus::NoMatch(&input_vec[..])),
+            $parser.parse(&input_vec[..])
+        );
+    };
 }
 
 #[test]
@@ -40,12 +50,7 @@ fn parser_should_parse_char_match() {
 
 #[test]
 fn parser_should_not_skip_input_if_parser_does_not_match() {
-    let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
-
-    assert_eq!(
-        Ok(MatchStatus::NoMatch(&input[0..])),
-        expect_character('x').skip().parse(&input[0..])
-    );
+    assert_parser!(should not parse "abc" using expect_character('x'));
 }
 
 #[test]
