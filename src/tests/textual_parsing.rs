@@ -2,19 +2,6 @@ use crate::parsers::character::{any_character, expect_character};
 use crate::prelude::v1::*;
 
 macro_rules! assert_parser {
-    {should parse $input:literal using $parser:expr => $output:expr} => {
-        let input_vec: Vec<(usize, char)> = $input.chars().enumerate().collect();
-        let input_len = input_vec.len();
-
-        assert_eq!(
-            Ok(MatchStatus::Match {
-                span: 0..input_len,
-                remainder: &input_vec[input_len..],
-                inner: $output
-            }),
-            $parser.parse(&input_vec[..])
-        );
-    };
     {should parse $elements:literal elements from $input:literal using $parser:expr => $output:expr} => {
         let input_vec: Vec<(usize, char)> = $input.chars().enumerate().collect();
 
@@ -44,7 +31,7 @@ macro_rules! assert_parser {
 
 #[test]
 fn parser_should_parse_char_match() {
-    assert_parser!(should parse "abc" using expect_character('a') => 'a');
+    assert_parser!(should parse 1 element from "abc" using expect_character('a') => 'a');
 }
 
 #[test]
