@@ -1,5 +1,4 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-extern crate parcel;
 use parcel::parsers::character::{any_character, expect_character};
 use parcel::Parser;
 
