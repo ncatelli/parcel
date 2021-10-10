@@ -1,3 +1,6 @@
+extern crate alloc;
+use alloc::vec::Vec;
+
 use crate::prelude::v1::*;
 
 /// Matches a single provided `u8`, returning match if the next `u8` in the

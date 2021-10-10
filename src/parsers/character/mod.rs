@@ -1,3 +1,6 @@
+extern crate alloc;
+use alloc::string::String;
+
 use crate::prelude::v1::*;
 
 /// Matches a single provided character, returning match if the next character

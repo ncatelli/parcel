@@ -1,3 +1,7 @@
+extern crate alloc;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use crate::parsers::character::{any_character, expect_character};
 use crate::prelude::v1::*;
 

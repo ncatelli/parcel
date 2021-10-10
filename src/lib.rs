@@ -9,9 +9,7 @@
 #[cfg(feature = "std")]
 extern crate std;
 
-#[cfg(not(feature = "std"))]
 extern crate alloc;
-#[cfg(not(feature = "std"))]
 use alloc::{boxed::Box, string::String, vec::Vec};
 
 pub mod formatter;
