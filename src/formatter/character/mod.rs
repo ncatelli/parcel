@@ -16,8 +16,8 @@ impl Cursor {
     }
 }
 
-impl std::fmt::Display for Cursor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Cursor {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "line:: {}, column: {}", self.line, self.column)
     }
 }
@@ -94,12 +94,12 @@ impl Default for TextFormatter {
     }
 }
 
-impl<'a> SpanFormatter<&'a [char], std::ops::Range<Cursor>> for TextFormatter {
+impl<'a> SpanFormatter<&'a [char], core::ops::Range<Cursor>> for TextFormatter {
     fn format_from_span(
         &self,
         span: crate::Span,
         input: &'a [char],
-    ) -> Result<std::ops::Range<Cursor>, SpanFormatterErr> {
+    ) -> Result<core::ops::Range<Cursor>, SpanFormatterErr> {
         if input.len() < span.end {
             Err(SpanFormatterErr::OutOfBounds(span))
         } else {

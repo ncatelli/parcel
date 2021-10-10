@@ -11,11 +11,12 @@ pub mod prelude;
 #[cfg(test)]
 mod tests;
 
-use std::borrow::Borrow;
+use core::borrow::Borrow;
+use core::marker::PhantomData;
 
 /// Span defines represents a range that covers the indexes into an input that
 /// a given pattern matches.
-pub type Span = std::ops::Range<usize>;
+pub type Span = core::ops::Range<usize>;
 
 /// MatchStatus represents a non-error parser result with two cases, signifying
 /// whether the parse returned a match or not.
@@ -1085,9 +1086,9 @@ where
 /// ```
 #[derive(Debug)]
 pub struct Map<P, F, A, B, C> {
-    input: std::marker::PhantomData<A>,
-    output_one: std::marker::PhantomData<B>,
-    output_two: std::marker::PhantomData<C>,
+    input: PhantomData<A>,
+    output_one: PhantomData<B>,
+    output_two: PhantomData<C>,
     parser: P,
     map_fn: F,
 }
@@ -1095,9 +1096,9 @@ pub struct Map<P, F, A, B, C> {
 impl<'a, P, F, A, B, C> Map<P, F, A, B, C> {
     pub fn new(parser: P, map_fn: F) -> Self {
         Self {
-            input: std::marker::PhantomData,
-            output_one: std::marker::PhantomData,
-            output_two: std::marker::PhantomData,
+            input: PhantomData,
+            output_one: PhantomData,
+            output_two: PhantomData,
             parser,
             map_fn,
         }
@@ -1308,22 +1309,22 @@ where
 /// ```
 #[derive(Debug)]
 pub struct AndThen<P1, P2, F, A, B, C> {
-    input: std::marker::PhantomData<A>,
-    output_one: std::marker::PhantomData<B>,
-    output_two: std::marker::PhantomData<C>,
+    input: PhantomData<A>,
+    output_one: PhantomData<B>,
+    output_two: PhantomData<C>,
     parser1: P1,
-    parser2: std::marker::PhantomData<P2>,
+    parser2: PhantomData<P2>,
     f: F,
 }
 
 impl<'a, P1, P2, F, A, B, C> AndThen<P1, P2, F, A, B, C> {
     pub fn new(parser1: P1, f: F) -> Self {
         Self {
-            input: std::marker::PhantomData,
-            output_one: std::marker::PhantomData,
-            output_two: std::marker::PhantomData,
+            input: PhantomData,
+            output_one: PhantomData,
+            output_two: PhantomData,
             parser1,
-            parser2: std::marker::PhantomData,
+            parser2: PhantomData,
             f,
         }
     }
@@ -1479,9 +1480,9 @@ where
 /// ```
 #[derive(Debug)]
 pub struct PeekNext<P1, P2, A, B, C> {
-    input: std::marker::PhantomData<A>,
-    output_one: std::marker::PhantomData<B>,
-    output_two: std::marker::PhantomData<C>,
+    input: PhantomData<A>,
+    output_one: PhantomData<B>,
+    output_two: PhantomData<C>,
     parser1: P1,
     parser2: P2,
 }
@@ -1489,9 +1490,9 @@ pub struct PeekNext<P1, P2, A, B, C> {
 impl<'a, P1, P2, A, B, C> PeekNext<P1, P2, A, B, C> {
     pub fn new(parser1: P1, parser2: P2) -> Self {
         Self {
-            input: std::marker::PhantomData,
-            output_one: std::marker::PhantomData,
-            output_two: std::marker::PhantomData,
+            input: PhantomData,
+            output_one: PhantomData,
+            output_two: PhantomData,
             parser1,
             parser2,
         }
@@ -1964,8 +1965,8 @@ pub struct Predicate<P, F, A, B>
 where
     F: Fn(&B) -> bool,
 {
-    input: std::marker::PhantomData<A>,
-    output: std::marker::PhantomData<B>,
+    input: PhantomData<A>,
+    output: PhantomData<B>,
     parser: P,
     pred_case: F,
 }
@@ -1976,8 +1977,8 @@ where
 {
     pub fn new(parser: P, pred_case: F) -> Self {
         Self {
-            input: std::marker::PhantomData,
-            output: std::marker::PhantomData,
+            input: PhantomData,
+            output: PhantomData,
             parser,
             pred_case,
         }
@@ -2628,18 +2629,18 @@ where
 /// ```
 #[derive(Debug)]
 pub struct Left<P, A, B, C> {
-    a: std::marker::PhantomData<A>,
-    b: std::marker::PhantomData<B>,
-    c: std::marker::PhantomData<C>,
+    a: PhantomData<A>,
+    b: PhantomData<B>,
+    c: PhantomData<C>,
     parser: P,
 }
 
 impl<'a, P, A, B, C> Left<P, A, B, C> {
     pub fn new(parser: P) -> Self {
         Self {
-            a: std::marker::PhantomData,
-            b: std::marker::PhantomData,
-            c: std::marker::PhantomData,
+            a: PhantomData,
+            b: PhantomData,
+            c: PhantomData,
             parser,
         }
     }
@@ -2748,18 +2749,18 @@ where
 /// ```
 #[derive(Debug)]
 pub struct Right<P, A, B, C> {
-    a: std::marker::PhantomData<A>,
-    b: std::marker::PhantomData<B>,
-    c: std::marker::PhantomData<C>,
+    a: PhantomData<A>,
+    b: PhantomData<B>,
+    c: PhantomData<C>,
     parser: P,
 }
 
 impl<'a, P, A, B, C> Right<P, A, B, C> {
     pub fn new(parser: P) -> Self {
         Self {
-            a: std::marker::PhantomData,
-            b: std::marker::PhantomData,
-            c: std::marker::PhantomData,
+            a: PhantomData,
+            b: PhantomData,
+            c: PhantomData,
             parser,
         }
     }
