@@ -1,3 +1,7 @@
+extern crate alloc;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use crate::parsers::byte::{any_byte, expect_byte};
 use crate::prelude::v1::*;
 
