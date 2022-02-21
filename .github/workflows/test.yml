@@ -50,9 +50,9 @@ jobs:
       - name: Add cargo-flamegraph
         run: cargo install flamegraph 
       - name: Generate benchmark flamegraphs
-        run: cargo flamegraph --bench ${{ matrix.bench }}-- --bench
+        run: cargo flamegraph --bench ${{ matrix.bench }} -- --bench
       - name: Upload rendered graphs
         uses: actions/upload-artifact@v2
         with:
           name: rendered-benchmark-flamegraphs
-          path: *.svg
+          path: "*.svg"
