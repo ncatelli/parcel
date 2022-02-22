@@ -1,7 +1,13 @@
-# See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.191.1/containers/rust/.devcontainer/base.Dockerfile
+ARG VARIANT="buster"
+FROM mcr.microsoft.com/vscode/devcontainers/rust:0-${VARIANT}
 
-FROM mcr.microsoft.com/vscode/devcontainers/rust:0-1
+# Add backports
+RUN echo 'deb http://deb.debian.org/debian bullseye-backports main contrib non-free' >> /etc/apt/sources.list \
+    && echo 'deb-src http://deb.debian.org/debian bullseye-backports main contrib non-free' >> /etc/apt/sources.list
 
-# [Optional] Uncomment this section to install additional packages.
-# RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-#     && apt-get -y install --no-install-recommends <your-package-list-here>
+# Install perf for 5.15 
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get -y install --no-install-recommends \
+    linux-perf-5.15 \
+    # Link perf to a known location
+    && ln -s /usr/bin/perf_5.15 /usr/bin/perf
