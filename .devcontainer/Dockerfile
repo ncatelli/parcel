@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/vscode/devcontainers/rust:0-${VARIANT}
 
 # Add backports
 RUN echo 'deb http://deb.debian.org/debian bullseye-backports main contrib non-free' >> /etc/apt/sources.list \
-    && echo 'deb-src http://deb.debian.org/debian bullseye-backports main contrib non-free' >> /etc/apt/sources.list \
+    && echo 'deb-src http://deb.debian.org/debian bullseye-backports main contrib non-free' >> /etc/apt/sources.list
 
 # Install perf for 5.15 
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \

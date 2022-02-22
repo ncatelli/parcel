@@ -43,6 +43,8 @@ jobs:
           - "binary_parsing"
     steps:
       - uses: actions/checkout@master
+      - name: Set kernel profiling sysctls
+        run: echo "2" > /proc/sys/kernel/perf_event_paranoid
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
