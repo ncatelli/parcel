@@ -34,27 +34,4 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: bench
-  flamegraph:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        bench: 
-          - "text_parsing"
-          - "binary_parsing"
-    steps:
-      - uses: actions/checkout@master
-      - name: Set kernel profiling sysctls
-        run: echo "2" > /proc/sys/kernel/perf_event_paranoid
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - name: Add cargo-flamegraph
-        run: cargo install flamegraph 
-      - name: Generate benchmark flamegraphs
-        run: cargo flamegraph --bench ${{ matrix.bench }} -- --bench
-      - name: Upload rendered graphs
-        uses: actions/upload-artifact@v2
-        with:
-          name: rendered-benchmark-flamegraphs
-          path: "*.svg"
+
