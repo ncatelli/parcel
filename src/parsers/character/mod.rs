@@ -39,6 +39,78 @@ pub fn expect_character<'a>(expected: char) -> impl Parser<'a, &'a [(usize, char
     }
 }
 
+/// Matches a single provided character, returning match if the next character
+/// in the array matches the expected value after converting sequential
+/// characters representing an escape-sequence to their corresponding escape
+/// character. Otherwise, a `NoMatch` is returned. Examples of such an escape
+/// are:
+///
+///  `[(0, 'a')] -> 'a'`.
+///  `[(0, '\\'), (1, '\n')] -> '\n'`.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character_escaped;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
+///   expect_character_escaped('a').parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character_escaped;
+/// let input: Vec<(usize, char)> = vec!['\n', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: '\n'}),
+///   expect_character_escaped('\n').parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character_escaped;
+/// let input: Vec<(usize, char)> = vec!['\\', 'n'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: '\n'}),
+///   expect_character_escaped('\n').parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::expect_character_escaped;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   expect_character_escaped('b').parse(&input)
+/// );
+/// ```
+pub fn expect_character_escaped<'a>(expected: char) -> impl Parser<'a, &'a [(usize, char)], char> {
+    move |input: &'a [(usize, char)]| match input.get(0..2) {
+        Some(&[(escape_pos, '\\'), (to_escape_pos, to_escape)]) => {
+            match char_to_escaped_equivalent(to_escape) {
+                Some(escaped_char) if expected == escaped_char => Ok(MatchStatus::Match {
+                    span: escape_pos..to_escape_pos + 1,
+                    remainder: &input[2..],
+                    inner: escaped_char,
+                }),
+                _ => Ok(MatchStatus::NoMatch(input)),
+            }
+        }
+        // discard the lookahead.
+        Some(&[(next_pos, next), _]) if expected == next => Ok(MatchStatus::Match {
+            span: next_pos..next_pos + 1,
+            remainder: &input[1..],
+            inner: next,
+        }),
+        _ => Ok(MatchStatus::NoMatch(input)),
+    }
+}
+
 /// Matches any single character regardless of value. Returning a `Match`
 /// result containing the next character in the stream if there is one
 /// available to consume.
@@ -68,6 +140,77 @@ pub fn any_character<'a>() -> impl Parser<'a, &'a [(usize, char)], char> {
     move |input: &'a [(usize, char)]| match input.get(0) {
         Some(&(pos, next)) => Ok(MatchStatus::Match {
             span: pos..pos + 1,
+            remainder: &input[1..],
+            inner: next,
+        }),
+        _ => Ok(MatchStatus::NoMatch(input)),
+    }
+}
+
+/// Matches any single character regardless of value, escaping any slash escape
+/// sequences prior to the match. /// This function returns a `Match` result
+/// containing the next character, or escaped sequence,in the stream if there
+/// is one available to consume. Examples being:
+///
+///  `[(0, 'a')] -> 'a'`.
+///  `[(0, '\\'), (1, '\n')] -> '\n'`.
+///
+/// # Examples
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::any_character_escaped;
+/// let input: Vec<(usize, char)> = vec!['a', 'b', 'c'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 'a'}),
+///   any_character_escaped().parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::any_character_escaped;
+/// let input: Vec<(usize, char)> = vec!['\n', 'a', 'b'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: '\n'}),
+///   any_character_escaped().parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::any_character_escaped;
+/// let input: Vec<(usize, char)> = vec!['\\', 'n'].into_iter().enumerate().collect();
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::Match{span: 0..2, remainder: &input[2..], inner: '\n'}),
+///   any_character_escaped().parse(&input)
+/// );
+/// ```
+///
+/// ```
+/// use parcel::prelude::v1::*;
+/// use parcel::parsers::character::any_character_escaped;
+/// let input = vec![];
+/// assert_eq!(
+///   Ok(parcel::MatchStatus::NoMatch(&input[0..])),
+///   any_character_escaped().parse(&input[0..])
+/// );
+/// ```
+pub fn any_character_escaped<'a>() -> impl Parser<'a, &'a [(usize, char)], char> {
+    move |input: &'a [(usize, char)]| match input.get(0..2) {
+        Some(&[(escape_pos, '\\'), (to_escape_pos, to_escape)]) => {
+            match char_to_escaped_equivalent(to_escape) {
+                Some(escaped_char) => Ok(MatchStatus::Match {
+                    span: escape_pos..to_escape_pos + 1,
+                    remainder: &input[2..],
+                    inner: escaped_char,
+                }),
+                None => Ok(MatchStatus::NoMatch(input)),
+            }
+        }
+        // discard the lookahead.
+        Some(&[(next_pos, next), _]) => Ok(MatchStatus::Match {
+            span: next_pos..next_pos + 1,
             remainder: &input[1..],
             inner: next,
         }),
@@ -450,5 +593,19 @@ pub fn digit<'a>(radix: u32) -> impl Parser<'a, &'a [(usize, char)], char> {
             inner: next,
         }),
         _ => Ok(MatchStatus::NoMatch(input)),
+    }
+}
+
+/// A utility function to convert a character to it's equivalent escaped
+/// representation.
+fn char_to_escaped_equivalent(c: char) -> Option<char> {
+    match c {
+        'n' => Some('\n'),
+        't' => Some('\t'),
+        'r' => Some('\r'),
+        '\'' => Some('\''),
+        '\"' => Some('\"'),
+        '\\' => Some('\\'),
+        _ => None,
     }
 }
