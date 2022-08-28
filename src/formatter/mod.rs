@@ -1,6 +1,6 @@
 /// SpanFormatterErr represents any errors that can happen while formatting
 /// output from a span.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SpanFormatterErr {
     /// OutOfBounds represents a case where a span extends over the bounds of an
     /// input.

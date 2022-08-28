@@ -1,7 +1,7 @@
 use crate::formatter::{SpanFormatter, SpanFormatterErr};
 
 /// Cursor represents a position within a text source.
-#[derive(Default, Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
 pub struct Cursor {
     /// The line number position (0-indexed).
     pub line: usize,

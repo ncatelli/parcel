@@ -28,7 +28,7 @@ pub type Span = core::ops::Range<usize>;
 
 /// MatchStatus represents a non-error parser result with two cases, signifying
 /// whether the parse returned a match or not.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum MatchStatus<U, T> {
     Match { span: Span, remainder: U, inner: T },
     NoMatch(U),
@@ -934,9 +934,7 @@ where
     fn parse(&self, input: A) -> ParseResult<'a, A, B> {
         match self.p1.parse(input) {
             Ok(ms) => match ms {
-                m
-                @
-                MatchStatus::Match {
+                m @ MatchStatus::Match {
                     span: _,
                     remainder: _,
                     inner: _,
@@ -1044,9 +1042,7 @@ where
         for parser in self.parsers.iter() {
             match parser.parse(input) {
                 Ok(ms) => match ms {
-                    m
-                    @
-                    MatchStatus::Match {
+                    m @ MatchStatus::Match {
                         span: _,
                         remainder: _,
                         inner: _,
@@ -1145,7 +1141,7 @@ pub struct Map<P, F, A, B, C> {
     map_fn: F,
 }
 
-impl<'a, P, F, A, B, C> Map<P, F, A, B, C> {
+impl<P, F, A, B, C> Map<P, F, A, B, C> {
     pub fn new(parser: P, map_fn: F) -> Self {
         Self {
             input: PhantomData,
@@ -1369,7 +1365,7 @@ pub struct AndThen<P1, P2, F, A, B, C> {
     f: F,
 }
 
-impl<'a, P1, P2, F, A, B, C> AndThen<P1, P2, F, A, B, C> {
+impl<P1, P2, F, A, B, C> AndThen<P1, P2, F, A, B, C> {
     pub fn new(parser1: P1, f: F) -> Self {
         Self {
             input: PhantomData,
@@ -1539,7 +1535,7 @@ pub struct PeekNext<P1, P2, A, B, C> {
     parser2: P2,
 }
 
-impl<'a, P1, P2, A, B, C> PeekNext<P1, P2, A, B, C> {
+impl<P1, P2, A, B, C> PeekNext<P1, P2, A, B, C> {
     pub fn new(parser1: P1, parser2: P2) -> Self {
         Self {
             input: PhantomData,
@@ -1706,7 +1702,7 @@ pub struct TakeUntilN<P> {
     n: usize,
 }
 
-impl<'a, P> TakeUntilN<P> {
+impl<P> TakeUntilN<P> {
     pub fn new(parser: P, n: usize) -> Self {
         Self { parser, n }
     }
@@ -1859,7 +1855,7 @@ pub struct TakeN<P> {
     n: usize,
 }
 
-impl<'a, P> TakeN<P> {
+impl<P> TakeN<P> {
     pub fn new(parser: P, n: usize) -> Self {
         Self { parser, n }
     }
@@ -2023,7 +2019,7 @@ where
     pred_case: F,
 }
 
-impl<'a, P, F, A, B> Predicate<P, F, A, B>
+impl<P, F, A, B> Predicate<P, F, A, B>
 where
     F: Fn(&B) -> bool,
 {
@@ -2197,7 +2193,7 @@ pub struct ZeroOrMore<P> {
     parser: P,
 }
 
-impl<'a, P> ZeroOrMore<P> {
+impl<P> ZeroOrMore<P> {
     pub fn new(parser: P) -> Self {
         Self { parser }
     }
@@ -2344,7 +2340,7 @@ pub struct OneOrMore<P> {
     parser: P,
 }
 
-impl<'a, P> OneOrMore<P> {
+impl<P> OneOrMore<P> {
     pub fn new(parser: P) -> Self {
         Self { parser }
     }
@@ -2513,7 +2509,7 @@ pub struct Optional<P> {
     parser: P,
 }
 
-impl<'a, P> Optional<P> {
+impl<P> Optional<P> {
     pub fn new(parser: P) -> Self {
         Self { parser }
     }
@@ -2633,7 +2629,7 @@ pub struct Join<P1, P2> {
     parser2: P2,
 }
 
-impl<'a, P1, P2> Join<P1, P2> {
+impl<P1, P2> Join<P1, P2> {
     pub fn new(parser1: P1, parser2: P2) -> Self {
         Self { parser1, parser2 }
     }
@@ -2743,7 +2739,7 @@ pub struct Left<P, A, B, C> {
     parser: P,
 }
 
-impl<'a, P, A, B, C> Left<P, A, B, C> {
+impl<P, A, B, C> Left<P, A, B, C> {
     pub fn new(parser: P) -> Self {
         Self {
             a: PhantomData,
@@ -2863,7 +2859,7 @@ pub struct Right<P, A, B, C> {
     parser: P,
 }
 
-impl<'a, P, A, B, C> Right<P, A, B, C> {
+impl<P, A, B, C> Right<P, A, B, C> {
     pub fn new(parser: P) -> Self {
         Self {
             a: PhantomData,

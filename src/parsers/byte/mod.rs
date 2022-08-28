@@ -34,7 +34,7 @@ use crate::prelude::v1::*;
 /// );
 /// ```
 pub fn expect_byte<'a>(expected: u8) -> impl Parser<'a, &'a [(usize, u8)], u8> {
-    move |input: &'a [(usize, u8)]| match input.get(0) {
+    move |input: &'a [(usize, u8)]| match input.first() {
         Some(&(pos, next)) if next == expected => Ok(MatchStatus::Match {
             span: pos..pos + 1,
             remainder: &input[1..],
@@ -128,7 +128,7 @@ pub fn expect_bytes<'a>(expected: &'static [u8]) -> impl Parser<'a, &'a [(usize,
 /// );
 /// ```
 pub fn any_byte<'a>() -> impl Parser<'a, &'a [(usize, u8)], u8> {
-    move |input: &'a [(usize, u8)]| match input.get(0) {
+    move |input: &'a [(usize, u8)]| match input.first() {
         Some(&(pos, next)) => Ok(MatchStatus::Match {
             span: pos..pos + 1,
             remainder: &input[1..],
