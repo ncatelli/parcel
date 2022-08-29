@@ -65,12 +65,8 @@ fn parse_one_of(c: &mut Criterion) {
 
     group.bench_function("combinator with byte vec", |b| {
         b.iter(|| {
-            let _expr = parcel::one_of(vec![
-                expect_byte(0x02),
-                expect_byte(0x01),
-                expect_byte(0x00),
-            ])
-            .parse(black_box(&seed_vec));
+            let _expr = parcel::one_of([expect_byte(0x02), expect_byte(0x01), expect_byte(0x00)])
+                .parse(black_box(&seed_vec));
         });
     });
     group.finish();

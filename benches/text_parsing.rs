@@ -66,7 +66,7 @@ fn parse_one_of(c: &mut Criterion) {
 
     group.bench_function("combinator with char vec", |b| {
         b.iter(|| {
-            let _expr = parcel::one_of(vec![
+            let _expr = parcel::one_of([
                 expect_character('c'),
                 expect_character('b'),
                 expect_character('a'),
