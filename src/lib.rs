@@ -986,6 +986,13 @@ where
     Or::new(parser1, thunk_to_parser())
 }
 
+/// Represents a collectiont type that can be passed to the `OneOf` set of
+/// combinators.
+pub trait OneOfParameterizable {}
+
+impl<P> OneOfParameterizable for Vec<P> {}
+impl<P, const N: usize> OneOfParameterizable for [P; N] {}
+
 /// Provides a convenient shortcut for the or combinator. allowing the passing
 /// of an array of matching parsers, returning the result of the first matching
 /// parser or a NoMatch if none match.
@@ -1023,17 +1030,41 @@ where
 /// );
 /// ```
 #[derive(Debug)]
-pub struct OneOf<P> {
-    parsers: Vec<P>,
+pub struct OneOf<P: OneOfParameterizable> {
+    parsers: P,
 }
 
-impl<P> OneOf<P> {
-    pub fn new(parsers: Vec<P>) -> Self {
+impl<P: OneOfParameterizable> OneOf<P> {
+    pub fn new(parsers: P) -> Self {
         Self { parsers }
     }
 }
 
-impl<'a, A, B, P> Parser<'a, A, B> for OneOf<P>
+impl<'a, A, B, P> Parser<'a, A, B> for OneOf<Vec<P>>
+where
+    A: Copy + Borrow<A> + 'a,
+    P: Parser<'a, A, B>,
+{
+    fn parse(&self, input: A) -> ParseResult<'a, A, B> {
+        for parser in self.parsers.iter() {
+            match parser.parse(input) {
+                Ok(ms) => match ms {
+                    m @ MatchStatus::Match {
+                        span: _,
+                        remainder: _,
+                        inner: _,
+                    } => return Ok(m),
+                    MatchStatus::NoMatch(_) => continue,
+                },
+                e @ Err(_) => return e,
+            };
+        }
+
+        Ok(MatchStatus::NoMatch(input))
+    }
+}
+
+impl<'a, A, B, P, const N: usize> Parser<'a, A, B> for OneOf<[P; N]>
 where
     A: Copy + Borrow<A> + 'a,
     P: Parser<'a, A, B>,
@@ -1087,16 +1118,17 @@ where
 /// use parcel::prelude::v1::*;
 /// use parcel::parsers::byte::expect_byte;
 /// let input: Vec<(usize, u8)> = vec![0x00, 0x01, 0x02].into_iter().enumerate().collect();
-/// let parsers = vec![expect_byte(0x01), expect_byte(0x02), expect_byte(0x00)];
+/// let parsers = [expect_byte(0x01), expect_byte(0x02), expect_byte(0x00)];
 /// assert_eq!(
 ///   Ok(parcel::MatchStatus::Match{span: 0..1, remainder: &input[1..], inner: 0x00}),
 ///   parcel::one_of(parsers).parse(&input)
 /// );
 /// ```
-pub fn one_of<'a, P, A, B>(parsers: Vec<P>) -> impl Parser<'a, A, B>
+pub fn one_of<'a, A, B, OOP>(parsers: OOP) -> OneOf<OOP>
 where
     A: Copy + Borrow<A> + 'a,
-    P: Parser<'a, A, B>,
+    OOP: OneOfParameterizable,
+    OneOf<OOP>: Parser<'a, A, B>,
 {
     OneOf::new(parsers)
 }

@@ -45,7 +45,7 @@ fn parser_should_not_skip_input_if_parser_does_not_match() {
 
 #[test]
 fn parser_can_match_with_one_of() {
-    let parsers = vec![
+    let parsers = [
         expect_character('b'),
         expect_character('c'),
         expect_character('a'),
