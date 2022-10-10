@@ -103,12 +103,12 @@ impl<'a> SpanFormatter<&'a [char], core::ops::Range<Cursor>> for TextFormatter {
         if input.len() < span.end {
             Err(SpanFormatterErr::OutOfBounds(span))
         } else {
-            let start = (&input[0..span.start])
+            let start = input[0..span.start]
                 .iter()
                 .fold(Cursor::default(), |cursor, &c| {
                     increment_cursor_from_input_char(cursor, self.newline_delimiter, c)
                 });
-            let end = (&input[span.start..span.end])
+            let end = input[span.start..span.end]
                 .iter()
                 .fold(start, |cursor, &c| {
                     increment_cursor_from_input_char(cursor, self.newline_delimiter, c)
