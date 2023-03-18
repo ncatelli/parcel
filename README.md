@@ -17,7 +17,7 @@ A parser combinator library for rust.
 
 ## Usage
 ### Testing
-Tests and documentation are provided primarily via docstring examples primarily but a few tests are additionally provided through standard rust unit testing and can be run via:
+Tests and documentation are provided primarily via docstring examples but a few tests are additionally provided through standard rust unit testing and can be run via:
 
 ```
 cargo test
